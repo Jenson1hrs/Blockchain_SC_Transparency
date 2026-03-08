@@ -1,0 +1,12 @@
+{
+  "name": "anti-counterfeit-chaincode",
+  "version": "1.0.0",
+  "main": "antiCounterfeit.js",
+  "license": "ISC",
+  "dependencies": {
+    "fabric-contract-api": "^2.5.0"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
