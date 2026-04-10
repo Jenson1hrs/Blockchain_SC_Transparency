@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getProduct, getProductHistory } from '../api/productService';
 import type { Product, ProductHistory } from '../types';
+import QRScanner from '../components/QRScanner';
 
 const VerifyProduct: React.FC = () => {
   const [productId, setProductId] = useState('');
@@ -8,6 +9,7 @@ const VerifyProduct: React.FC = () => {
   const [history, setHistory] = useState<ProductHistory[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
 
   const handleVerify = async () => {
     if (!productId.trim()) {
@@ -25,13 +27,37 @@ const VerifyProduct: React.FC = () => {
         getProduct(productId),
         getProductHistory(productId)
       ]);
-      
+    
+      if (!productData || !productData.productId) {
+        throw new Error("⚠️ Potential counterfeit product!");
+      }
+    
       setProduct(productData);
       setHistory(historyData);
+    
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Product not found or verification failed');
-    } finally {
-      setLoading(false);
+      setError(
+        err instanceof Error 
+          ? err.message 
+          : "⚠️ Product not found — possible counterfeit"
+      );
+    }
+  };
+
+  const handleScan = (scannedText: string) => {
+    try {
+      console.log("QR Scanned:", scannedText);
+  
+      // Example format: P001|B001|abc123
+      const [productId] = scannedText.split('|');
+  
+      setProductId(productId);
+      setShowScanner(false);
+  
+      // auto verify after scan
+      setTimeout(() => handleVerify(), 300);
+    } catch (err) {
+      setError("Invalid QR format");
     }
   };
 
@@ -56,7 +82,13 @@ const VerifyProduct: React.FC = () => {
         </h1>
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap">
+          <button
+              onClick={() => setShowScanner(!showScanner)}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            {showScanner ? 'Close Scanner' : 'Scan QR'}
+          </button>
             <input
               type="text"
               value={productId}
@@ -73,10 +105,16 @@ const VerifyProduct: React.FC = () => {
             </button>
           </div>
 
+          {showScanner && (
+             <div className="mt-6">
+              <QRScanner onScan={handleScan} />
+             </div>
+          )}
+
           {error && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-600">{error}</p>
-            </div>
+             </div>
           )}
         </div>
 
