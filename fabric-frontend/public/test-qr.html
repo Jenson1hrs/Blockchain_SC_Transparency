@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test QR Code</title>
+    <head>
+        <title>Product QR Code - P900</title>
+        <style>
+            body { font-family: Arial; text-align: center; padding: 50px; }
+            img { border: 2px solid #333; padding: 20px; background: white; width: 300px; height: 300px; }
+            .info { margin-top: 20px; font-size: 14px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <h1>Product P900 - URL QR Code</h1>
+        <img id="qrImage" alt="QR Code" />
+        <div class="info">
+            <p>✅ This QR contains a URL</p>
+            <p>📱 Scan with your phone camera - it will open automatically!</p>
+            <p>🔗 <span id="qrUrl"></span></p>
+        </div>
+        <script>
+            const qrCodeData = "data:image/png;base64,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";
+            const qrUrl = "http://172.26.54.173:5173/verify/P900?batch=B900&hash=8478490a53083d74d91f9fc150d75cee921afadfc35238af062c5838f6663db7";
+            
+            document.getElementById('qrImage').src = qrCodeData;
+            document.getElementById('qrUrl').textContent = qrUrl;
+        </script>
+    </body>
+</html>

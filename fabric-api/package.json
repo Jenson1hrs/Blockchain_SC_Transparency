@@ -13,10 +13,13 @@
   "dependencies": {
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
+    "crypto": "^1.0.1",
     "express": "^5.2.1",
+    "fabric-ca-client": "^2.2.20",
     "fabric-network": "^2.2.20",
     "fs": "^0.0.1-security",
     "path": "^0.12.7",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "qrcode": "^1.5.4"
   }
 }

@@ -8,6 +8,7 @@ router.get('/product/:id', controller.getProduct);
 router.post('/transfer', controller.transferProduct);
 router.post('/location', controller.updateLocation);
 router.get('/history/:id', controller.getHistory);
+router.post('/verifyQR', controller.verifyQR);
 
 // Root endpoint
 router.get('/', (req, res) => {

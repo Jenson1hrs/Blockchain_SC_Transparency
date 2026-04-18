@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getProduct, getProductHistory } from '../api/productService';
+import { getProductHistory } from '../api/productService';
 import type { Product, ProductHistory } from '../types';
 import QRScanner from '../components/QRScanner';
 
@@ -12,52 +12,84 @@ const VerifyProduct: React.FC = () => {
   const [showScanner, setShowScanner] = useState(false);
 
   const handleVerify = async () => {
+    console.log('Verify clicked for product:', productId);
     if (!productId.trim()) {
       setError('Please enter a Product ID');
       return;
     }
-
+  
     setLoading(true);
     setError(null);
     setProduct(null);
     setHistory(null);
-
+  
     try {
-      const [productData, historyData] = await Promise.all([
-        getProduct(productId),
-        getProductHistory(productId)
-      ]);
-    
-      if (!productData || !productData.productId) {
-        throw new Error("⚠️ Potential counterfeit product!");
+      const response = await fetch(`http://192.168.1.11:3000/product/${productId}`);
+      const productData = await response.json();
+      
+      console.log('API Response:', productData);
+      
+      if (!productData.success) throw new Error(productData.message);
+      
+      let productInfo = productData.data;
+      if (productInfo) {
+        setProduct({
+          productId: productInfo.product_id || productInfo.productId,
+          name: productInfo.name,
+          manufacturer: productInfo.manufacturer,
+          batchNumber: productInfo.batch_number || productInfo.batchNumber,
+          location: productInfo.location,
+          owner: productInfo.owner,
+          status: productInfo.status,
+          timestamp: productInfo.timestamp
+        });
       }
-    
-      setProduct(productData);
-      setHistory(historyData);
-    
+      
+      // 🔥 TEMPORARILY COMMENT OUT HISTORY - DON'T CALL getProductHistory
+      // setHistory(null);
+      
     } catch (err) {
-      setError(
-        err instanceof Error 
-          ? err.message 
-          : "⚠️ Product not found — possible counterfeit"
-      );
+      console.error('Verification error:', err);
+      setError(err instanceof Error ? err.message : 'Product not found or verification failed');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleScan = (scannedText: string) => {
+  const handleScan = async (scannedText: string) => {
     try {
-      console.log("QR Scanned:", scannedText);
-  
-      // Example format: P001|B001|abc123
-      const [productId] = scannedText.split('|');
-  
-      setProductId(productId);
+      const [productId, batchNumber, hash] = scannedText.split('|');
+
+      if (!productId || !batchNumber || !hash) {
+        throw new Error("Invalid QR format");
+      }
+
+      setLoading(true);
+      setError(null);
       setShowScanner(false);
-  
-      // auto verify after scan
-      setTimeout(() => handleVerify(), 300);
+
+      const response = await fetch('http://192.168.1.11:3000/verifyQR', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, batchNumber, hash })
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message);
+      }
+
+      const historyData = await getProductHistory(productId);
+
+      setProduct(data.data);
+      setHistory(historyData);
+      setProductId(productId);
+
     } catch (err) {
-      setError("Invalid QR format");
+      setError(err instanceof Error ? err.message : "Verification failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -83,12 +115,6 @@ const VerifyProduct: React.FC = () => {
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="flex gap-4 flex-wrap">
-          <button
-              onClick={() => setShowScanner(!showScanner)}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            {showScanner ? 'Close Scanner' : 'Scan QR'}
-          </button>
             <input
               type="text"
               value={productId}
@@ -97,29 +123,28 @@ const VerifyProduct: React.FC = () => {
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
-              onClick={handleVerify}
+              type="button"
+              onClick={() => handleVerify()}
               disabled={loading}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? 'Verifying...' : 'Verify'}
             </button>
           </div>
-
-          {showScanner && (
-             <div className="mt-6">
-              <QRScanner onScan={handleScan} />
-             </div>
+          {product && (
+            <pre className="bg-gray-100 p-4 rounded-lg mb-4 overflow-auto text-xs">
+              {JSON.stringify(product, null, 2)}
+            </pre>
           )}
-
           {error && (
-             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-600">{error}</p>
-             </div>
+            </div>
           )}
         </div>
 
         {product && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
             <div className="bg-green-50 p-4 border-b border-green-200">
               <h2 className="text-xl font-semibold text-green-800">
                 ✅ Authentic Product Verified

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { Product, ProductHistory, ApiResponse } from '../types';
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'http://192.168.1.11:3000';
 
 // Get product by ID
 export const getProduct = async (productId: string): Promise<Product> => {
@@ -18,15 +18,21 @@ export const getProduct = async (productId: string): Promise<Product> => {
 
 // Get product history
 export const getProductHistory = async (productId: string): Promise<ProductHistory[]> => {
-  const response = await axios.get<ApiResponse<ProductHistory[]>>(
-    `${API_BASE_URL}/history/${productId}`
-  );
-  
-  if (!response.data.success) {
-    throw new Error(response.data.message || 'History not found');
+  try {
+    const response = await axios.get<ApiResponse<ProductHistory[]>>(
+      `${API_BASE_URL}/history/${productId}`
+    );
+    
+    if (!response.data.success) {
+      console.error('History API returned error:', response.data.message);
+      return []; // Return empty array instead of throwing
+    }
+    
+    return response.data.data || [];
+  } catch (error) {
+    console.error('History fetch error:', error);
+    return []; // Return empty array on error
   }
-  
-  return response.data.data!;
 };
 
 // Create a new product

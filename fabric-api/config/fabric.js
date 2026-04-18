@@ -12,7 +12,7 @@ async function connectToNetwork() {
     const walletPath = path.join(__dirname, '../wallet');
     const wallet = await Wallets.newFileSystemWallet(walletPath);
 
-    const identity = await wallet.get('Admin@org1.example.com');  // ← Changed to match
+    const identity = await wallet.get('admin');  // ← Changed to match
     if (!identity) {
         throw new Error('Admin identity not found in wallet');
     }
@@ -20,7 +20,7 @@ async function connectToNetwork() {
     const gateway = new Gateway();
     await gateway.connect(ccp, {
         wallet,
-        identity: 'Admin@org1.example.com',  // ← This matches now
+        identity: 'admin',  // ← This matches now
         discovery: { enabled: true, asLocalhost: true }
     });
 
