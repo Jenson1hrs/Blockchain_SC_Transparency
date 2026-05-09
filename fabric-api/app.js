@@ -1,25 +1,32 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const productRoutes = require('./routes/productRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
-// 🔥 FIX: Allow multiple origins
 const allowedOrigins = [
   'http://localhost:5173',
-  'http://192.168.1.11:5173',
-  'http://192.168.1.4:5173'  // Add your old IP too
+  'http://127.0.0.1:5173',
 ];
+/** Vite `npm run dev -- --host` on Wi‑Fi / WSL (any IP) — avoids stale per-IP entries */
+const LAN_VITE =
+  /^http:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}):5173$/;
 
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps, curl)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
     }
-    return callback(null, true);
+    if (process.env.NODE_ENV !== 'production' && LAN_VITE.test(origin)) {
+      return callback(null, true);
+    }
+    const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    return callback(new Error(msg), false);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
@@ -27,10 +34,11 @@ app.use(cors({
 
 app.use(express.json());
 
+app.use('/auth', authRoutes);
 app.use('/', productRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 API running on port ${PORT}`);
-  console.log(`📍 Accessible at: http://192.168.1.11:${PORT}`);
+  console.log(`📍 LAN: http://<this-pc-ip>:${PORT}  |  localhost:${PORT}`);
 });

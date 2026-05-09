@@ -25,6 +25,29 @@ function validateProductData(data) {
     if (!data.location || typeof data.location !== 'string') {
         throw new Error("Invalid or missing location");
     }
+
+    if (data.expiryDate) {
+        const d = new Date(data.expiryDate);
+        if (Number.isNaN(d.getTime())) {
+            throw new Error("Invalid expiryDate format (expected YYYY-MM-DD)");
+        }
+    }
+
+    if (data.imageUrl && typeof data.imageUrl !== 'string') {
+        throw new Error("Invalid imageUrl");
+    }
+    if (data.ingredients && typeof data.ingredients !== 'string') {
+        throw new Error("Invalid ingredients");
+    }
+    if (data.allergyInfo && typeof data.allergyInfo !== 'string') {
+        throw new Error("Invalid allergyInfo");
+    }
+    if (data.halalStatus && typeof data.halalStatus !== 'string') {
+        throw new Error("Invalid halalStatus");
+    }
+    if (data.usageInstructions && typeof data.usageInstructions !== 'string') {
+        throw new Error("Invalid usageInstructions");
+    }
 }
 
 // ===============================
@@ -65,9 +88,18 @@ async function createProduct(data) {
         // 🔴 STEP 5: SYNC TO DATABASE (NOT SOURCE OF TRUTH)
         try {
             await pool.query(
+                `ALTER TABLE products
+                 ADD COLUMN IF NOT EXISTS expiry_date DATE,
+                 ADD COLUMN IF NOT EXISTS image_url TEXT,
+                 ADD COLUMN IF NOT EXISTS ingredients TEXT,
+                 ADD COLUMN IF NOT EXISTS allergy_info TEXT,
+                 ADD COLUMN IF NOT EXISTS halal_status TEXT,
+                 ADD COLUMN IF NOT EXISTS usage_instructions TEXT`
+            );
+            await pool.query(
                 `INSERT INTO products 
-                (product_id, name, manufacturer, batch_number, location, owner, status, timestamp)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+                (product_id, name, manufacturer, batch_number, location, owner, status, timestamp, expiry_date, image_url, ingredients, allergy_info, halal_status, usage_instructions)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
                 [
                     product.productId,
                     product.name,
@@ -76,7 +108,13 @@ async function createProduct(data) {
                     product.location,
                     product.owner,
                     product.status,
-                    product.timestamp
+                    product.timestamp,
+                    data.expiryDate || null,
+                    data.imageUrl || null,
+                    data.ingredients || null,
+                    data.allergyInfo || null,
+                    data.halalStatus || null,
+                    data.usageInstructions || null
                 ]
             );
         } catch (dbError) {

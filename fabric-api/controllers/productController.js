@@ -17,6 +17,14 @@ function verifyQR(productId, batchNumber, hash) {
     return expectedHash === hash;
 }
 
+function getFrontendBase() {
+    const frontendBase = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    if (/localhost|127\.0\.0\.1/i.test(frontendBase)) {
+        console.warn('[qr] FRONTEND_URL uses localhost. External scanners/phones cannot open this URL.');
+    }
+    return frontendBase;
+}
+
 exports.createProduct = async (req, res) => {
     try {
         const data = req.body;
@@ -52,15 +60,17 @@ exports.createProduct = async (req, res) => {
             dbResult = existingDB;
         }
 
-        // Generate QR code
+        const created = blockchainResult.blockchain;
         const hash = generateHash(data.id, data.batch);
-        const qrData = `http://192.168.1.4:5173/verify/${data.id}?batch=${data.batch}&hash=${hash}`;
+        // Phones cannot open localhost — set FRONTEND_URL to http://<laptop-LAN-ip>:5173 before demo
+        const frontendBase = getFrontendBase();
+        const qrData = `${frontendBase}/verify/${encodeURIComponent(data.id)}?batch=${encodeURIComponent(data.batch)}&hash=${encodeURIComponent(hash)}`;
         const qrImage = await QRCode.toDataURL(qrData);
 
         res.json({
             success: true,
             message: "Product stored successfully",
-            blockchain: blockchainResult,
+            data: created,
             database: dbResult,
             qrCode: qrImage,
             qrRaw: qrData
@@ -76,10 +86,50 @@ exports.createProduct = async (req, res) => {
     }
 };
 
+exports.getProductQr = async (req, res) => {
+    try {
+        const id = req.params.id;
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Missing product id' });
+        }
+
+        const product = await fabricService.getProduct(id);
+        const batchNumber = product.batchNumber || product.batch_number;
+        if (!batchNumber) {
+            return res.status(500).json({ success: false, message: 'Product batch number missing' });
+        }
+
+        const hash = generateHash(product.productId || id, batchNumber);
+        const frontendBase = getFrontendBase();
+        const qrUrl = `${frontendBase}/verify/${encodeURIComponent(product.productId || id)}?batch=${encodeURIComponent(batchNumber)}&hash=${encodeURIComponent(hash)}`;
+        const qrCode = await QRCode.toDataURL(qrUrl);
+
+        res.json({
+            success: true,
+            qrCode,
+            qrUrl,
+            qrRaw: qrUrl
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 exports.getProduct = async (req, res) => {
     try {
         const result = await fabricService.getProduct(req.params.id);
         res.json({ success: true, data: result });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.getExpiringProducts = async (req, res) => {
+    try {
+        const days = Number(req.query.days || 7);
+        const safeDays = Number.isFinite(days) && days > 0 ? Math.min(days, 30) : 7;
+        const rows = await postgresService.getExpiringProducts(safeDays);
+        res.json({ success: true, data: rows });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -121,6 +171,7 @@ exports.verifyQR = async (req, res) => {
         if (!productId || !batchNumber || !hash) {
             return res.status(400).json({
                 success: false,
+                verificationStatus: 'invalid_request',
                 message: "Missing required fields: productId, batchNumber, hash"
             });
         }
@@ -130,21 +181,34 @@ exports.verifyQR = async (req, res) => {
         if (!isValid) {
             return res.json({
                 success: false,
+                verificationStatus: 'fake',
                 message: "Invalid QR Code - Possible counterfeit"
             });
         }
 
-        const product = await fabricService.getProduct(productId);
-
-        res.json({
-            success: true,
-            message: "QR Code verified successfully",
-            data: product
-        });
-
+        try {
+            const product = await fabricService.getProduct(productId);
+            return res.json({
+                success: true,
+                verificationStatus: 'authentic',
+                message: "QR Code verified successfully",
+                data: product
+            });
+        } catch (fetchErr) {
+            const msg = fetchErr.message || '';
+            if (msg.includes('does not exist')) {
+                return res.json({
+                    success: false,
+                    verificationStatus: 'not_found',
+                    message: "Product not found on blockchain"
+                });
+            }
+            throw fetchErr;
+        }
     } catch (err) {
         res.status(500).json({
             success: false,
+            verificationStatus: 'error',
             message: err.message
         });
     }

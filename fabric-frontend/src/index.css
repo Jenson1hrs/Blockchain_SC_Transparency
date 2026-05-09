@@ -1,3 +1,32 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .app-bg {
+    @apply bg-gradient-to-b from-slate-50 via-blue-50 to-slate-100;
+  }
+
+  .card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+  }
+
+  .card-soft {
+    @apply bg-white/80 backdrop-blur rounded-xl border border-gray-200 shadow-sm;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 260ms ease-out;
+}
