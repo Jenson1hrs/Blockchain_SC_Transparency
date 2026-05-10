@@ -86,6 +86,23 @@ function isValidRole(role) {
   return ROLES.includes(role);
 }
 
+async function listAllUsers() {
+  await ensureUsersTable();
+  const result = await pool.query(
+    `SELECT id, name, email, role, preferred_language, created_at
+     FROM users
+     ORDER BY id ASC`
+  );
+  return result.rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    role: row.role,
+    preferredLanguage: row.preferred_language ?? 'en',
+    createdAt: row.created_at,
+  }));
+}
+
 module.exports = {
   ROLES,
   ensureUsersTable,
@@ -95,4 +112,5 @@ module.exports = {
   createUser,
   updateUserProfile,
   isValidRole,
+  listAllUsers,
 };

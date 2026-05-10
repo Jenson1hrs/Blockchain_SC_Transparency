@@ -64,3 +64,21 @@ export interface ProductQrResult {
   qrUrl: string;
   qrRaw: string;
 }
+
+/** Account row returned by GET /admin/users (admin only). */
+export interface AdminUserRow {
+  id: number;
+  name: string;
+  email: string;
+  role: UserRole;
+  preferredLanguage: string;
+  createdAt: string;
+}
+
+export interface SystemStatusResponse {
+  success: boolean;
+  timestamp: string;
+  api: string;
+  database: { status: string; detail?: string };
+  blockchain: { status: string; detail?: string };
+}

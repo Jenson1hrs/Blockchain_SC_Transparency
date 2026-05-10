@@ -44,7 +44,10 @@ router.get('/', (req, res) => {
             'POST /location - Update location (distributor/retailer/admin + JWT)',
             'GET /history/:id - Get product transaction history',
             'POST /verifyQR - Verify QR payload',
-            'GET /qr/:id - Regenerate QR for existing product'
+            'GET /qr/:id - Regenerate QR for existing product',
+            'GET /inventory - List current user saved product IDs (JWT)',
+            'POST /inventory - Add product to user inventory (JWT) body: { productId }',
+            'DELETE /inventory/:productId - Remove from user inventory (JWT)',
         ]
     });
 });

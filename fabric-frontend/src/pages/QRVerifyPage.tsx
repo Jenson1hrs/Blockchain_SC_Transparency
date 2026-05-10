@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import {
-  getProduct,
-  getProductHistory,
-  verifyQr,
-} from '../api/productService';
+import { getProduct, getProductHistory, verifyQr } from '../api/productService';
 import { API_BASE_URL } from '../config';
 import type { Product, ProductHistory } from '../types';
 import { formatHistoryTimestamp } from '../utils/historyTime';
-import { getHistoryEventLabel } from '../utils/historyLabel';
 import { getExpiryReminder } from '../utils/expiryReminder';
 import AppShell from '../components/AppShell';
-import { addInventoryId } from '../utils/inventoryStorage';
+import {
+  Alert,
+  Button,
+  ProductCard,
+  ProductTimeline,
+  ProductStatusBadge,
+  ExpiryBadge,
+} from '../components';
+import { useAuth } from '../context/AuthContext';
+import { addToUserInventory } from '../api/inventoryService';
 
 type VerifyState =
   | { kind: 'loading' }
@@ -22,12 +26,28 @@ type VerifyState =
   | { kind: 'error'; message: string };
 
 const QRVerifyPage = () => {
+  const { user } = useAuth();
   const { productId: routeProductId } = useParams<{ productId: string }>();
   const location = useLocation();
   const [state, setState] = useState<VerifyState>({ kind: 'loading' });
   const [history, setHistory] = useState<ProductHistory[]>([]);
   const [inventoryMsg, setInventoryMsg] = useState<string | null>(null);
-  const [zoomImage, setZoomImage] = useState<string | null>(null);
+  const [inventoryErr, setInventoryErr] = useState<string | null>(null);
+
+  const handleSaveToInventory = async (pid: string) => {
+    setInventoryErr(null);
+    setInventoryMsg(null);
+    if (!user) {
+      setInventoryErr('Sign in to save products to your inventory.');
+      return;
+    }
+    try {
+      const { added } = await addToUserInventory(pid);
+      setInventoryMsg(added ? 'Added to My Inventory' : 'Already in My Inventory');
+    } catch (e) {
+      setInventoryErr(e instanceof Error ? e.message : 'Could not add to inventory');
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -104,41 +124,81 @@ const QRVerifyPage = () => {
     };
   }, [routeProductId, location.search]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Manufactured':
-        return 'bg-blue-100 text-blue-800';
-      case 'In Transit':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Delivered':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   if (state.kind === 'loading') {
     return (
-      <AppShell title="QR Verification" subtitle="Validate authenticity from scanned QR data.">
-        <div className="card p-8 text-center">Loading…</div>
+      <AppShell
+        title="QR Verification"
+        subtitle="Validating authenticity from scanned QR data"
+      >
+        <div className="card p-12 text-center animate-fade-up">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-100 text-primary-600 rounded-full mb-4">
+            <svg
+              className="animate-spin w-6 h-6"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-neutral-900 mb-2">
+            Verifying Product
+          </h2>
+          <p className="text-neutral-600">
+            Checking blockchain authenticity...
+          </p>
+        </div>
       </AppShell>
     );
   }
 
   if (state.kind === 'fake') {
     return (
-      <AppShell title="QR Verification" subtitle="Validate authenticity from scanned QR data.">
-        <div className="max-w-lg mx-auto card p-8 text-center animate-fade-up">
-          <h1 className="text-xl font-bold text-red-700 mb-2">
-            Verification Failed
-          </h1>
-          <p className="text-gray-600 text-sm mb-6">
-            {state.message ||
-              'QR verification failed. The QR code may have been tampered with.'}
-          </p>
-          <Link to="/" className="text-blue-600 hover:underline">
-            ← Home
-          </Link>
+      <AppShell title="QR Verification" subtitle="Validation failed">
+        <div className="max-w-lg mx-auto animate-fade-up">
+          <div className="card p-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-danger-100 text-danger-600 rounded-full mb-6">
+              <svg
+                className="w-8 h-8"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-neutral-900 mb-4">
+              Verification Failed
+            </h1>
+            <p className="text-neutral-600 mb-8">
+              {state.message ||
+                'QR verification failed. The QR code may have been tampered with.'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button as={Link} to="/verify">
+                Try Again
+              </Button>
+              <Button as={Link} to="/" variant="secondary">
+                Home
+              </Button>
+            </div>
+          </div>
         </div>
       </AppShell>
     );
@@ -146,15 +206,40 @@ const QRVerifyPage = () => {
 
   if (state.kind === 'not_found') {
     return (
-      <AppShell title="QR Verification" subtitle="Validate authenticity from scanned QR data.">
-        <div className="max-w-lg mx-auto card p-8 text-center animate-fade-up">
-          <h1 className="text-xl font-bold text-gray-800 mb-2">Not found</h1>
-          <p className="text-gray-600 text-sm mb-6">
-            {state.message || 'Product not found. This may be an unregistered or counterfeit item.'}
-          </p>
-          <Link to="/" className="text-blue-600 hover:underline">
-            ← Home
-          </Link>
+      <AppShell title="QR Verification" subtitle="Product not found">
+        <div className="max-w-lg mx-auto animate-fade-up">
+          <div className="card p-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-neutral-100 text-neutral-600 rounded-full mb-6">
+              <svg
+                className="w-8 h-8"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.203-2.47M12 22c5.514 0 10-4.486 10-10S17.514 2 12 2 2 6.486 2 12s4.486 10 10 10z"
+                />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-neutral-900 mb-4">
+              Product Not Found
+            </h1>
+            <p className="text-neutral-600 mb-8">
+              {state.message ||
+                'Product not found. This may be an unregistered or counterfeit item.'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button as={Link} to="/verify">
+                Verify Another
+              </Button>
+              <Button as={Link} to="/" variant="secondary">
+                Home
+              </Button>
+            </div>
+          </div>
         </div>
       </AppShell>
     );
@@ -164,267 +249,325 @@ const QRVerifyPage = () => {
     const msg = state.message;
     const looksLikeConnection =
       /network error|no response|bad gateway|ECONNREFUSED|ERR_NETWORK|502|503/i.test(
-        msg
+        msg,
       );
-    const title = looksLikeConnection
-      ? "Can't reach the API"
-      : 'Verification error';
+
     return (
-      <AppShell title="QR Verification" subtitle="Validate authenticity from scanned QR data.">
-        <div className="max-w-xl mx-auto card p-8 animate-fade-up">
-          <h1 className="text-xl font-bold text-red-700 mb-2 text-center">
-            {title}
-          </h1>
-          {looksLikeConnection && (
-            <p className="text-amber-800 text-sm bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-              A <strong>fake hash</strong> test only works after the app can talk to the
-              server. Generic &quot;Network Error&quot; usually means the browser never
-              got an HTTP response (wrong API URL, API not running, or CORS blocked).
-            </p>
-          )}
-          <p className="text-xs text-gray-500 font-mono mb-2">
-            API base: {API_BASE_URL}
-          </p>
-          <pre className="text-left text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded-lg p-4 whitespace-pre-wrap font-sans mb-6 overflow-x-auto">
-            {msg}
-          </pre>
-          <div className="text-center">
-            <Link to="/" className="text-blue-600 hover:underline">
-              ← Home
-            </Link>
+      <AppShell title="QR Verification" subtitle="Verification error">
+        <div className="max-w-2xl mx-auto animate-fade-up">
+          <div className="card p-8">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-danger-100 text-danger-600 rounded-full mb-4">
+                <svg
+                  className="w-8 h-8"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-neutral-900 mb-2">
+                {looksLikeConnection
+                  ? "Can't reach the API"
+                  : 'Verification Error'}
+              </h1>
+            </div>
+
+            {looksLikeConnection && (
+              <Alert type="warning" className="mb-6">
+                A <strong>fake hash</strong> test only works after the app can
+                talk to the server. Generic "Network Error" usually means the
+                browser never got an HTTP response (wrong API URL, API not
+                running, or CORS blocked).
+              </Alert>
+            )}
+
+            <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-6">
+              <p className="text-sm font-medium text-neutral-700 mb-2">
+                API Configuration
+              </p>
+              <p className="text-xs font-mono text-neutral-600">
+                Base URL: {API_BASE_URL}
+              </p>
+            </div>
+
+            <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-8">
+              <p className="text-sm font-medium text-neutral-700 mb-2">
+                Error Details
+              </p>
+              <pre className="text-xs text-neutral-800 whitespace-pre-wrap font-mono overflow-x-auto">
+                {msg}
+              </pre>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button as={Link} to="/verify">
+                Try Again
+              </Button>
+              <Button as={Link} to="/" variant="secondary">
+                Home
+              </Button>
+            </div>
           </div>
         </div>
       </AppShell>
     );
   }
 
-  const product = state.kind === 'authentic' || state.kind === 'id_only' ? state.product : null;
+  const product =
+    state.kind === 'authentic' || state.kind === 'id_only'
+      ? state.product
+      : null;
   if (!product) return null;
-  const expiryReminder = getExpiryReminder(product.expiryDate);
-  const expiryBadgeClass = (() => {
-    if (!expiryReminder) return '';
-    switch (expiryReminder.level) {
-      case 'expired':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'urgent':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'warning':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
-      default:
-        return 'bg-green-100 text-green-800 border-green-200';
-    }
-  })();
 
-  const banner =
-    state.kind === 'authentic' ? (
-      <div className="bg-green-50 p-4 border-b border-green-200">
-        <h2 className="text-xl font-semibold text-green-800">
-          Authentic (QR verified)
-        </h2>
-      </div>
-    ) : (
-      <div className="bg-amber-50 p-4 border-b border-amber-200">
-        <h2 className="text-xl font-semibold text-amber-900">Product found</h2>
-        <p className="text-sm text-amber-800 mt-1">{state.message}</p>
-      </div>
-    );
+  const expiryReminder = getExpiryReminder(product.expiryDate);
 
   return (
-    <AppShell title="QR Verification" subtitle="Validate authenticity from scanned QR data.">
-      <div className="max-w-4xl mx-auto">
-        <div className="card overflow-hidden animate-fade-up">
-          {banner}
-          <div className="p-6">
-            {expiryReminder && (
-              <p className={`inline-block mb-4 text-xs px-2 py-1 rounded-full border ${expiryBadgeClass}`}>
-                Expiry Reminder: {expiryReminder.label}
-              </p>
-            )}
-            <div className="mb-5 p-4 rounded-lg border bg-slate-50">
-              <p className="text-sm font-semibold text-gray-900 mb-2">Expiry Reminder</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                <div>
-                  <p className="text-gray-500">Expires on</p>
-                  <p className="font-medium">{product.expiryDate || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Status</p>
-                  <p className="font-medium">{expiryReminder?.statusText || 'No expiry set'}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Days left</p>
-                  <p className="font-medium">
-                    {expiryReminder ? (expiryReminder.daysLeft >= 0 ? expiryReminder.daysLeft : 0) : 'N/A'}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1">
-                {product.imageUrl ? (
-                  <img
-                    src={product.imageUrl}
-                    alt={`${product.name} product`}
-                    className="w-full max-h-64 object-cover rounded-lg border border-gray-200 cursor-zoom-in"
-                    onClick={() => setZoomImage(product.imageUrl || null)}
-                  />
-                ) : (
-                  <div className="h-52 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm text-gray-500">
-                    No product image
-                  </div>
-                )}
-              </div>
-              <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Product ID</p>
-                  <p className="font-mono">{product.productId}</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const out = addInventoryId(product.productId);
-                      setInventoryMsg(
-                        out.added
-                          ? 'Added to My Inventory'
-                          : 'Already in My Inventory'
-                      );
-                    }}
-                    className="block text-xs text-indigo-700 hover:underline mt-1"
-                  >
-                    Add to My Inventory
-                  </button>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Name</p>
-                  <p className="font-medium">{product.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Manufacturer</p>
-                  <p className="font-medium">{product.manufacturer}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Batch</p>
-                  <p className="font-mono">{product.batchNumber}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Expiry Date</p>
-                  <p className="font-medium">{product.expiryDate || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Halal Status</p>
-                  <p className="font-medium">{product.halalStatus || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Owner</p>
-                  <p className="font-medium">{product.owner}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Location</p>
-                  <p className="font-medium">{product.location}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Status</p>
-                  <span
-                    className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(product.status)}`}
-                  >
-                    {product.status}
-                  </span>
-                </div>
-                <div className="sm:col-span-2">
-                  <p className="text-sm text-gray-500">Ingredients</p>
-                  <p className="text-sm">{product.ingredients || 'N/A'}</p>
-                </div>
-                <div className="sm:col-span-2">
-                  <p className="text-sm text-gray-500">Allergy Info</p>
-                  <p className="text-sm">{product.allergyInfo || 'N/A'}</p>
-                </div>
-                <div className="sm:col-span-2">
-                  <p className="text-sm text-gray-500">Usage Instructions</p>
-                  <p className="text-sm">{product.usageInstructions || 'N/A'}</p>
-                </div>
-              </div>
-            </div>
-            {inventoryMsg && (
-              <p className="mt-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
-                {inventoryMsg}{' '}
-                <Link to="/inventory" className="underline">
-                  Open Inventory
-                </Link>
-              </p>
-            )}
-          </div>
-        </div>
-
-        {history.length > 0 && (
-          <div className="card overflow-hidden mt-8 animate-fade-up">
-            <div className="bg-gray-100 p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">Product journey</h3>
-            </div>
-            <div className="divide-y divide-gray-200">
-              {history.map((entry, index) => (
-                <div key={`${entry.txId}-${index}`} className="p-4 hover:bg-gray-50">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600">
-                          {history.length - index}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        <span className="text-xs px-2 py-1 rounded-full bg-indigo-100 text-indigo-800">
-                          {getHistoryEventLabel(history, index)}
-                        </span>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${getStatusColor(entry.data.status)}`}
-                        >
-                          {entry.data.status}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {formatHistoryTimestamp(entry)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Owner:</span> {entry.data.owner}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Location:</span>{' '}
-                        {entry.data.location}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-8 text-center flex gap-4 justify-center">
-          <Link to="/" className="text-blue-600 hover:underline">
-            ← Verify
-          </Link>
-          <Link to="/create" className="text-blue-600 hover:underline">
-            Create product
-          </Link>
-        </div>
-        {zoomImage && (
-          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-            <div className="relative w-full max-w-3xl">
-              <button
-                type="button"
-                onClick={() => setZoomImage(null)}
-                className="absolute -top-10 right-0 text-white text-sm border border-white/40 rounded-md px-3 py-1 hover:bg-white/10"
+    <AppShell title="QR Verification" subtitle="Product verification results">
+      <div className="max-w-4xl mx-auto space-y-8 animate-fade-up">
+        {/* Verification Status Banner */}
+        {state.kind === 'authentic' ? (
+          <Alert type="success" className="text-center">
+            <div className="flex items-center justify-center gap-3">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                Close
-              </button>
-              <img
-                src={zoomImage}
-                alt="Enlarged product"
-                className="w-full max-h-[80vh] object-contain rounded-lg bg-white"
-              />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span className="font-semibold">
+                Authentic Product - QR Verified
+              </span>
+            </div>
+          </Alert>
+        ) : (
+          <Alert type="warning" className="text-center">
+            <div className="flex items-center justify-center gap-3">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+              <span className="font-semibold">
+                Product Found - Limited Verification
+              </span>
+            </div>
+            <p className="mt-2">{state.message}</p>
+          </Alert>
+        )}
+
+        {/* Product Card */}
+        <ProductCard
+          product={{
+            id: product.productId,
+            name: product.name,
+            description: product.ingredients ?? undefined,
+            manufacturer: product.manufacturer,
+            status: product.status,
+            expiryDate: product.expiryDate ?? undefined,
+            imageUrl: product.imageUrl ?? undefined,
+          }}
+          expiryReminder={expiryReminder || undefined}
+          actions={
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void handleSaveToInventory(product.productId)}
+              >
+                Save to Inventory
+              </Button>
+            </div>
+          }
+        />
+
+        {inventoryErr && (
+          <Alert type="error">
+            {inventoryErr}{' '}
+            <Link to="/login" className="underline font-medium">
+              Sign in
+            </Link>
+          </Alert>
+        )}
+
+        {/* Inventory Message */}
+        {inventoryMsg && (
+          <Alert type="success">
+            {inventoryMsg}{' '}
+            <Link to="/inventory" className="underline font-medium">
+              Open Inventory
+            </Link>
+          </Alert>
+        )}
+
+        {/* Detailed Information */}
+        <div className="card p-8">
+          <h3 className="text-lg font-semibold text-neutral-900 mb-6">
+            Product Details
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-neutral-500">
+                  Product ID
+                </label>
+                <p className="font-mono text-neutral-900">
+                  {product.productId}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-neutral-500">
+                  Batch Number
+                </label>
+                <p className="font-mono text-neutral-900">
+                  {product.batchNumber}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-neutral-500">
+                  Status
+                </label>
+                <div className="mt-1">
+                  <ProductStatusBadge status={product.status} />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-neutral-500">
+                  Current Owner
+                </label>
+                <p className="text-neutral-900">{product.owner}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-neutral-500">
+                  Location
+                </label>
+                <p className="text-neutral-900">{product.location}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-neutral-500">
+                  Last Updated
+                </label>
+                <p className="text-neutral-900">
+                  {new Date(product.timestamp).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-neutral-500">
+                  Halal Status
+                </label>
+                <p className="text-neutral-900">
+                  {product.halalStatus || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-neutral-500">
+                  Expiry Date
+                </label>
+                <p className="text-neutral-900">
+                  {product.expiryDate || 'N/A'}
+                </p>
+              </div>
+              {expiryReminder && (
+                <div>
+                  <label className="text-sm font-medium text-neutral-500">
+                    Expiry Status
+                  </label>
+                  <div className="mt-1">
+                    <ExpiryBadge level={expiryReminder.level} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Additional Information */}
+          <div className="mt-8 space-y-6">
+            {product.ingredients && (
+              <div>
+                <label className="text-sm font-medium text-neutral-500">
+                  Ingredients
+                </label>
+                <p className="text-neutral-900 mt-1">{product.ingredients}</p>
+              </div>
+            )}
+
+            {product.allergyInfo && (
+              <div>
+                <label className="text-sm font-medium text-neutral-500">
+                  Allergy Information
+                </label>
+                <p className="text-neutral-900 mt-1">{product.allergyInfo}</p>
+              </div>
+            )}
+
+            {product.usageInstructions && (
+              <div>
+                <label className="text-sm font-medium text-neutral-500">
+                  Usage Instructions
+                </label>
+                <p className="text-neutral-900 mt-1">
+                  {product.usageInstructions}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Product History */}
+        {history.length > 0 && (
+          <div className="card p-8">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-6">
+              Supply Chain History
+            </h3>
+            <ProductTimeline
+              history={history.map((entry) => ({
+                timestamp: formatHistoryTimestamp(entry),
+                status: entry.data.status,
+                location: entry.data.location,
+                notes: `Transaction: ${entry.txId.slice(0, 16)}...`,
+                actor: entry.data.owner,
+              }))}
+            />
+          </div>
         )}
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
+          <Button as={Link} to="/verify">
+            Verify Another Product
+          </Button>
+          <Button as={Link} to="/" variant="secondary">
+            Home
+          </Button>
+        </div>
       </div>
     </AppShell>
   );

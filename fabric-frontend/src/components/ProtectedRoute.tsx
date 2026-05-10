@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import AppShell from './AppShell';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../context/I18nContext';
 import type { UserRole } from '../types';
 import type { ReactNode } from 'react';
 
@@ -12,12 +13,13 @@ export default function ProtectedRoute({
   allowedRoles: UserRole[];
 }) {
   const { user, loading } = useAuth();
+  const { t } = useI18n();
   const location = useLocation();
 
   if (loading) {
     return (
-      <AppShell title="Loading…" subtitle="Checking session">
-        <div className="card p-8 text-center text-gray-600 animate-fade-up">Loading…</div>
+      <AppShell title={t('common.loading')} subtitle={t('common.loadingSession')}>
+        <div className="card p-8 text-center text-gray-600 animate-fade-up">{t('common.loading')}</div>
       </AppShell>
     );
   }
@@ -28,11 +30,9 @@ export default function ProtectedRoute({
 
   if (!allowedRoles.includes(user.role)) {
     return (
-      <AppShell title="Access denied" subtitle="Role restriction">
+      <AppShell title={t('common.accessDeniedTitle')} subtitle={t('common.accessDeniedSub')}>
         <div className="card p-8 text-center animate-fade-up">
-          <p className="text-red-700 font-medium">
-            Access denied: your role cannot use this feature.
-          </p>
+          <p className="text-red-700 font-medium">{t('common.accessDenied')}</p>
         </div>
       </AppShell>
     );

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../components/AppShell';
+import { Button, Alert, ProductCard } from '../components';
 import { getExpiringProducts } from '../api/productService';
 import { getExpiryReminder } from '../utils/expiryReminder';
 import type { Product } from '../types';
-import { addInventoryId } from '../utils/inventoryStorage';
+import { addToUserInventory } from '../api/inventoryService';
 
 const ExpiringProducts = () => {
   const [items, setItems] = useState<Product[]>([]);
@@ -26,86 +27,194 @@ const ExpiringProducts = () => {
     void run();
   }, []);
 
+  const expiredCount = items.filter(
+    (p) => getExpiryReminder(p.expiryDate)?.level === 'expired',
+  ).length;
+  const urgentCount = items.filter(
+    (p) => getExpiryReminder(p.expiryDate)?.level === 'urgent',
+  ).length;
+  const warningCount = items.filter(
+    (p) => getExpiryReminder(p.expiryDate)?.level === 'warning',
+  ).length;
+
   return (
     <AppShell
-      title="Expiring Soon"
-      subtitle="Products reaching expiry within 7 days."
+      title="Expiring Products"
+      subtitle="Products reaching expiry within the next 7 days"
     >
-      <div className="card p-6 animate-fade-up">
-        {loading && <p className="text-sm text-gray-600">Loading…</p>}
-        {error && (
-          <pre className="text-xs text-red-800 bg-red-50 p-3 rounded-lg border border-red-200 whitespace-pre-wrap font-sans overflow-x-auto">
-            {error}
-          </pre>
-        )}
-        {!loading && !error && items.length === 0 && (
-          <p className="text-sm text-gray-600">No products expiring in the next 7 days.</p>
+      <div className="space-y-8 animate-fade-up">
+        {/* Header with Stats */}
+        <div className="card p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-neutral-900">
+                Expiry Alerts
+              </h2>
+              <p className="text-sm text-neutral-600 mt-1">
+                Monitor products approaching their expiry dates
+              </p>
+            </div>
+            <div className="flex gap-4 text-sm">
+              {expiredCount > 0 && (
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-danger-600">
+                    {expiredCount}
+                  </div>
+                  <div className="text-neutral-500">Expired</div>
+                </div>
+              )}
+              {urgentCount > 0 && (
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-warning-600">
+                    {urgentCount}
+                  </div>
+                  <div className="text-neutral-500">Urgent</div>
+                </div>
+              )}
+              {warningCount > 0 && (
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-warning-600">
+                    {warningCount}
+                  </div>
+                  <div className="text-neutral-500">Warning</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="card p-12 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-100 text-primary-600 rounded-full mb-4">
+              <svg
+                className="animate-spin w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+              Loading Products
+            </h3>
+            <p className="text-neutral-600">
+              Checking for expiring products...
+            </p>
+          </div>
         )}
 
+        {/* Error State */}
+        {error && !loading && <Alert type="error">{error}</Alert>}
+
+        {/* Empty State */}
+        {!loading && !error && items.length === 0 && (
+          <div className="card p-12 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-success-100 text-success-600 rounded-full mb-6">
+              <svg
+                className="w-8 h-8"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-neutral-900 mb-2">
+              All Good!
+            </h3>
+            <p className="text-neutral-600 mb-8 max-w-md mx-auto">
+              No products are expiring within the next 7 days. All your tracked
+              products are safe.
+            </p>
+            <Button as={Link} to="/verify" size="lg">
+              Verify Product
+            </Button>
+          </div>
+        )}
+
+        {/* Products List */}
         {!loading && !error && items.length > 0 && (
-          <div className="divide-y divide-gray-200">
-            {items.map((p) => {
-              const expiry = getExpiryReminder(p.expiryDate);
+          <div className="space-y-6">
+            {items.map((product) => {
+              const reminder = getExpiryReminder(product.expiryDate);
               return (
-                <div key={p.productId} className="py-4 flex flex-col gap-2">
-                  <div className="flex flex-wrap justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-gray-900">{p.name}</p>
-                      <p className="text-xs text-gray-500 font-mono">{p.productId}</p>
-                    </div>
-                    {expiry && (
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full border ${
-                          expiry.level === 'expired'
-                            ? 'bg-red-100 text-red-800 border-red-200'
-                            : expiry.level === 'urgent'
-                              ? 'bg-orange-100 text-orange-800 border-orange-200'
-                              : 'bg-amber-100 text-amber-800 border-amber-200'
-                        }`}
+                <ProductCard
+                  key={product.productId}
+                  product={{
+                    id: product.productId,
+                    name: product.name,
+                    description: product.ingredients ?? undefined,
+                    manufacturer: product.manufacturer,
+                    status: product.status,
+                    expiryDate: product.expiryDate ?? undefined,
+                    imageUrl: product.imageUrl ?? undefined,
+                  }}
+                  expiryReminder={reminder || undefined}
+                  actions={
+                    <div className="flex gap-2">
+                      <Button
+                        as={Link}
+                        to={`/verify/${encodeURIComponent(product.productId)}`}
+                        variant="secondary"
+                        size="sm"
                       >
-                        {expiry.label}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    Expiry: {p.expiryDate || 'N/A'} | Owner: {p.owner}
-                  </div>
-                  <div className="text-sm">
-                    <div className="flex gap-4">
-                      <Link
-                        to={`/verify/${encodeURIComponent(p.productId)}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        Verify product →
-                      </Link>
-                      <button
-                        type="button"
+                        Verify
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => {
-                          const out = addInventoryId(p.productId);
-                          setInventoryMsg(
-                            out.added
-                              ? `${p.productId} added to My Inventory`
-                              : `${p.productId} already in My Inventory`
-                          );
+                          void (async () => {
+                            setError(null);
+                            try {
+                              const { added } = await addToUserInventory(product.productId);
+                              setInventoryMsg(
+                                added
+                                  ? `${product.name} added to inventory`
+                                  : `${product.name} already in inventory`,
+                              );
+                            } catch (e) {
+                              setError(e instanceof Error ? e.message : 'Could not save to inventory');
+                            }
+                          })();
                         }}
-                        className="text-indigo-700 hover:underline"
                       >
-                        Add to Inventory
-                      </button>
+                        Save
+                      </Button>
                     </div>
-                  </div>
-                </div>
+                  }
+                />
               );
             })}
           </div>
         )}
+
+        {/* Inventory Message */}
         {inventoryMsg && (
-          <p className="text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg p-3 mt-4">
+          <Alert type="success">
             {inventoryMsg}{' '}
-            <Link to="/inventory" className="underline">
+            <Link to="/inventory" className="underline font-medium">
               Open Inventory
             </Link>
-          </p>
+          </Alert>
         )}
       </div>
     </AppShell>
