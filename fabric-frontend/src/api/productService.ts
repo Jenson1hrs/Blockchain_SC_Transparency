@@ -20,10 +20,19 @@ export function normalizeProduct(
   if (!pid) return null;
   const status = raw.status as Product['status'];
   const ts = raw.timestamp as string | undefined;
+  const manufacturerCompanyName = (raw.manufacturerCompanyName ??
+    raw.manufacturer_company_name) as string | null | undefined;
+
   return {
     productId: pid,
     name: String(raw.name ?? ''),
     manufacturer: String(raw.manufacturer ?? ''),
+    manufacturerUserId: (raw.manufacturerUserId ?? raw.manufacturer_user_id ?? null) as
+      | number
+      | null,
+    manufacturerCompanyName: manufacturerCompanyName
+      ? String(manufacturerCompanyName)
+      : String(raw.manufacturer ?? ''),
     batchNumber: String(raw.batchNumber ?? raw.batch_number ?? ''),
     expiryDate: (raw.expiryDate ?? raw.expiry_date ?? null) as string | null,
     imageUrl: (raw.imageUrl ?? raw.image_url ?? null) as string | null,
@@ -37,7 +46,68 @@ export function normalizeProduct(
       ? status
       : 'Manufactured') as Product['status'],
     timestamp: ts ?? new Date().toISOString(),
+    metadataComplete: (raw.metadataComplete ?? raw.metadata_complete ?? null) as boolean | null,
+    metadataCompletionPercent: (raw.metadataCompletionPercent ??
+      raw.metadata_completion_percent ??
+      null) as number | null,
+    metadataMissingFields: (raw.metadataMissingFields ??
+      raw.metadata_missing_fields ??
+      undefined) as string[] | undefined,
+    manufacturerOrganizationVerified: Boolean(
+      raw.manufacturerOrganizationVerified ?? raw.organization_verified
+    ),
+    manufacturerVerifiedByRegulator: Boolean(
+      raw.manufacturerVerifiedByRegulator ?? raw.verified_by_regulator
+    ),
+    manufacturerVerificationDate: (raw.manufacturerVerificationDate ??
+      raw.verification_date ??
+      null) as string | null,
+    manufacturerOrganizationFlagged: Boolean(
+      raw.manufacturerOrganizationFlagged ?? raw.organization_flagged
+    ),
+    currentOwnerUserId: (raw.currentOwnerUserId ?? raw.current_owner_user_id ?? null) as
+      | number
+      | null,
+    currentOwnerRole: (raw.currentOwnerRole ?? raw.current_owner_role ?? null) as string | null,
+    currentOwnerName: (raw.currentOwnerName ?? raw.current_owner_name ?? null) as string | null,
+    lastTransferredToUserId: (raw.lastTransferredToUserId ??
+      raw.last_transferred_to_user_id ??
+      null) as number | null,
+    lastTransferredAt: (raw.lastTransferredAt ?? raw.last_transferred_at ?? null) as string | null,
   };
+}
+
+export function getManufacturerDisplayLabel(product: Product): string {
+  return product.manufacturerCompanyName?.trim() || product.manufacturer;
+}
+
+export interface ProductSearchResult {
+  productId: string;
+  name: string;
+  manufacturer: string;
+  batchNumber: string;
+  status: string;
+  location: string;
+  owner: string;
+  expiryDate: string | null;
+  imageUrl: string | null;
+}
+
+export async function searchProducts(query: string, limit = 30): Promise<ProductSearchResult[]> {
+  const path = '/products/search';
+  try {
+    const response = await apiClient.get<{
+      success: boolean;
+      data?: ProductSearchResult[];
+      message?: string;
+    }>(path, { params: { q: query.trim(), limit } });
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Search failed');
+    }
+    return response.data.data ?? [];
+  } catch (e) {
+    throw new Error(formatApiError(e, path));
+  }
 }
 
 export const getProduct = async (productId: string): Promise<Product> => {
@@ -199,21 +269,45 @@ export const verifyQr = async (
 
 export const transferProduct = async (
   id: string,
-  newOwner: string
+  newOwnerUserId: number
 ): Promise<Product> => {
-  const response = await apiClient.post<ApiResponse<Record<string, unknown>>>(
-    'transfer',
-    { id, newOwner }
-  );
+  const path = 'transfer';
+  try {
+    const response = await apiClient.post<ApiResponse<Record<string, unknown>>>(path, {
+      id,
+      newOwnerUserId,
+    });
 
-  if (!response.data.success) {
-    throw new Error(response.data.message || 'Failed to transfer product');
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to transfer product');
+    }
+
+    const p = normalizeProduct(response.data.data);
+    if (!p) throw new Error('Invalid transfer response');
+    return p;
+  } catch (e) {
+    throw new Error(formatApiError(e, path));
   }
-
-  const p = normalizeProduct(response.data.data);
-  if (!p) throw new Error('Invalid transfer response');
-  return p;
 };
+
+export async function fetchAssignedProducts(limit = 100): Promise<Product[]> {
+  const path = '/products/assigned';
+  try {
+    const response = await apiClient.get<{
+      success: boolean;
+      data?: Record<string, unknown>[];
+      message?: string;
+    }>(path, { params: { limit } });
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to load assigned products');
+    }
+    return (response.data.data ?? [])
+      .map((r) => normalizeProduct(r))
+      .filter((p): p is Product => Boolean(p));
+  } catch (e) {
+    throw new Error(formatApiError(e, path));
+  }
+}
 
 export const updateLocation = async (
   id: string,

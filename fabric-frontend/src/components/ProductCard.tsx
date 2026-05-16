@@ -1,6 +1,11 @@
 import React from 'react';
 import { ProductStatusBadge } from './ProductStatusBadge';
 import { ExpiryBadge } from './ExpiryBadge';
+import { PersonalizedAlertsList } from './PersonalizedAlertsPanel';
+import { OrganizationLink } from './OrganizationLink';
+import { MetadataIncompleteBadge } from './MetadataIncompleteBadge';
+import { VerifiedOrganizationBadge, OrganizationFlaggedBadge } from './VerificationBadge';
+import type { PersonalizedAlert } from '../utils/personalizedAlerts';
 
 interface ProductCardProps {
   product: {
@@ -8,6 +13,11 @@ interface ProductCardProps {
     name: string;
     description?: string;
     manufacturer?: string;
+    manufacturerUserId?: number | null;
+    manufacturerDisplayName?: string;
+    metadataComplete?: boolean | null;
+    manufacturerOrganizationVerified?: boolean;
+    manufacturerOrganizationFlagged?: boolean;
     status?: string;
     expiryDate?: string;
     imageUrl?: string;
@@ -17,6 +27,8 @@ interface ProductCardProps {
     level: 'expired' | 'urgent' | 'warning' | 'safe';
   };
   actions?: React.ReactNode;
+  /** Rule-based allergy / dietary / halal alerts (separate from expiry). */
+  personalizedAlerts?: PersonalizedAlert[];
   className?: string;
 }
 
@@ -24,6 +36,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   expiryReminder,
   actions,
+  personalizedAlerts,
   className,
 }) => {
   return (
@@ -35,12 +48,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <img
               src={product.imageUrl}
               alt={product.name}
-              className="w-24 h-24 object-cover rounded-lg border border-neutral-200"
+              className="w-24 h-24 object-cover rounded-lg border border-neutral-200 dark:border-neutral-600"
             />
           ) : (
-            <div className="w-24 h-24 bg-neutral-100 rounded-lg border border-neutral-200 flex items-center justify-center">
+            <div className="w-24 h-24 bg-neutral-100 dark:bg-neutral-900/80 rounded-lg border border-neutral-200 dark:border-neutral-600 flex items-center justify-center">
               <svg
-                className="w-8 h-8 text-neutral-400"
+                className="w-8 h-8 text-neutral-400 dark:text-neutral-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -60,27 +73,44 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold text-neutral-900 truncate">
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 truncate">
                 {product.name}
               </h3>
               {product.description && (
-                <p className="text-sm text-neutral-600 mt-1 line-clamp-2">
+                <p className="text-sm text-neutral-600 dark:text-neutral-200 mt-1 line-clamp-2">
                   {product.description}
                 </p>
               )}
-              {product.manufacturer && (
-                <p className="text-sm text-neutral-500 mt-1">
-                  Manufacturer: {product.manufacturer}
+              {(product.manufacturerDisplayName || product.manufacturer) && (
+                <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-1">
+                  Manufacturer:{' '}
+                  <OrganizationLink
+                    userId={product.manufacturerUserId}
+                    name={product.manufacturerDisplayName || product.manufacturer || ''}
+                  />
                 </p>
               )}
             </div>
 
             {/* Status Badges */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 items-end">
               {product.status && <ProductStatusBadge status={product.status} />}
               {expiryReminder && <ExpiryBadge level={expiryReminder.level} />}
+              {product.metadataComplete === false && <MetadataIncompleteBadge />}
+              {product.manufacturerOrganizationFlagged && (
+                <OrganizationFlaggedBadge compact />
+              )}
+              {product.manufacturerOrganizationVerified && (
+                <VerifiedOrganizationBadge compact />
+              )}
             </div>
           </div>
+
+          {personalizedAlerts && personalizedAlerts.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-600">
+              <PersonalizedAlertsList alerts={personalizedAlerts} compact />
+            </div>
+          )}
 
           {/* Actions */}
           {actions && <div className="mt-4 flex gap-2">{actions}</div>}

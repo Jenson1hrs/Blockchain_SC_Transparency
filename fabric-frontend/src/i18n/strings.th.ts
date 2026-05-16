@@ -175,7 +175,7 @@ export const STRINGS_TH: Record<string, string> = {
   'landing.cardTraceTitle': 'การติดตามย้อนกลับ',
   'landing.cardTraceSub': 'การเดินทางของผลิตภัณฑ์จากโรงงานถึงการขาย',
   'landing.cardExpiryTitle': 'แจ้งเตือนหมดอายุ',
-  'landing.cardExpirySub': 'เตรียมการแจ้งเตือนทางอีเมลก่อนหมดอายุ',
+  'landing.cardExpirySub': 'เตรียมแจ้งเตือนในแอปก่อนหมดอายุ',
 
   'landing.featuresHeading': 'ฟีเจอร์สำหรับซัพพลายเชนสมัยใหม่',
   'landing.featuresSub':

@@ -175,7 +175,7 @@ export const STRINGS_AR: Record<string, string> = {
   'landing.cardTraceTitle': 'التتبع',
   'landing.cardTraceSub': 'رحلة المنتج من المصنع إلى البيع.',
   'landing.cardExpiryTitle': 'تنبيهات الانتهاء',
-  'landing.cardExpirySub': 'كن مستعدًا للبريد الإلكتروني قبل انتهاء الصلاحية.',
+  'landing.cardExpirySub': 'كن مستعدًا قبل انتهاء الصلاحية مع إشعارات داخل التطبيق.',
 
   'landing.featuresHeading': 'ميزات قوية لسلاسل التوريد الحديثة',
   'landing.featuresSub':

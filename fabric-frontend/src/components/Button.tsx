@@ -22,7 +22,7 @@ function buildClassName(
   className?: string
 ) {
   return clsx(
-    'inline-flex items-center justify-center font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200',
+    'inline-flex items-center justify-center font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed',
     {
       'btn-primary': variant === 'primary',
       'btn-secondary': variant === 'secondary',

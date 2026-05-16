@@ -176,7 +176,7 @@ export const STRINGS_VI: Record<string, string> = {
   'landing.cardTraceTitle': 'Truy xuất nguồn gốc',
   'landing.cardTraceSub': 'Hành trình sản phẩm từ sản xuất đến bán.',
   'landing.cardExpiryTitle': 'Cảnh báo hết hạn',
-  'landing.cardExpirySub': 'Luôn chủ động với nhắc nhở sẵn sàng gửi email.',
+  'landing.cardExpirySub': 'Luôn chủ động trước hạn với thông báo trong ứng dụng.',
 
   'landing.featuresHeading': 'Tính năng mạnh cho chuỗi cung ứng hiện đại',
   'landing.featuresSub':

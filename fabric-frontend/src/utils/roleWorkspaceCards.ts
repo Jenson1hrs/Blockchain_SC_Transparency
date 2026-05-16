@@ -17,20 +17,43 @@ export function roleWorkspaceCards(role: UserRole): WorkspaceCard[] {
       { titleKey: 'dash.admin.chain.t', descriptionKey: 'dash.admin.chain.d', to: '/admin/system', icon: '⛓️' },
       { titleKey: 'dash.admin.api.t', descriptionKey: 'dash.admin.api.d', to: '/admin/system', icon: '🛜' },
       { titleKey: 'dash.admin.db.t', descriptionKey: 'dash.admin.db.d', to: '/admin/system', icon: '🗄️' },
-      { titleKey: 'dash.admin.audit.t', descriptionKey: 'dash.admin.audit.d', to: '/admin/audit', icon: '📜' },
-      { titleKey: 'dash.admin.config.t', descriptionKey: 'dash.admin.config.d', to: '/admin/config', icon: '📝' },
+    ];
+  }
+  if (role === 'regulator') {
+    return [
+      {
+        titleKey: 'dash.regulator.orgs.t',
+        descriptionKey: 'dash.regulator.orgs.d',
+        to: '/regulator/organizations',
+        icon: '🏛️',
+      },
+      {
+        titleKey: 'dash.regulator.products.t',
+        descriptionKey: 'dash.regulator.products.d',
+        to: '/regulator/products',
+        icon: '🔍',
+      },
+      {
+        titleKey: 'dash.regulator.transparency.t',
+        descriptionKey: 'dash.regulator.transparency.d',
+        to: '/regulator/transparency',
+        icon: '📊',
+      },
+      { titleKey: 'dash.regulator.verify.t', descriptionKey: 'dash.regulator.verify.d', to: '/verify', icon: '✅' },
     ];
   }
   if (role === 'manufacturer') {
     return [
       { titleKey: 'dash.mfg.create.t', descriptionKey: 'dash.mfg.create.d', to: '/create', icon: '➕' },
-      { titleKey: 'dash.mfg.qr.t', descriptionKey: 'dash.mfg.qr.d', to: '/verify', icon: '📱' },
-      { titleKey: 'dash.mfg.meta.t', descriptionKey: 'dash.mfg.meta.d', to: '/verify', icon: '📋' },
-      { titleKey: 'dash.mfg.verify.t', descriptionKey: 'dash.mfg.verify.d', to: '/verify', icon: '✅' },
+      { titleKey: 'dash.mfg.products.t', descriptionKey: 'dash.mfg.products.d', to: '/my-products', icon: '📦' },
+      { titleKey: 'dash.distributor.transfer.t', descriptionKey: 'dash.distributor.transfer.d', to: '/transfer', icon: '🚚' },
+      { titleKey: 'dash.mfg.trace.t', descriptionKey: 'dash.mfg.trace.d', to: '/verify', icon: '🔍' },
+      { titleKey: 'dash.mfg.profile.t', descriptionKey: 'dash.mfg.profile.d', to: '/profile', icon: '⚙️' },
     ];
   }
   if (role === 'distributor') {
     return [
+      { titleKey: 'nav.assignedProducts', descriptionKey: 'assignedProducts.subtitleDistributor', to: '/assigned-products', icon: '📦' },
       { titleKey: 'dash.distributor.transfer.t', descriptionKey: 'dash.distributor.transfer.d', to: '/transfer', icon: '🚚' },
       { titleKey: 'dash.distributor.location.t', descriptionKey: 'dash.distributor.location.d', to: '/location', icon: '📍' },
       { titleKey: 'dash.distributor.verify.t', descriptionKey: 'dash.distributor.verify.d', to: '/verify', icon: '✅' },
@@ -39,6 +62,7 @@ export function roleWorkspaceCards(role: UserRole): WorkspaceCard[] {
   }
   if (role === 'retailer') {
     return [
+      { titleKey: 'nav.assignedProducts', descriptionKey: 'assignedProducts.subtitleRetailer', to: '/assigned-products', icon: '📦' },
       { titleKey: 'dash.retailer.transfer.t', descriptionKey: 'dash.retailer.transfer.d', to: '/transfer', icon: '🏪' },
       { titleKey: 'dash.retailer.location.t', descriptionKey: 'dash.retailer.location.d', to: '/location', icon: '📍' },
       { titleKey: 'dash.retailer.verify.t', descriptionKey: 'dash.retailer.verify.d', to: '/verify', icon: '✅' },

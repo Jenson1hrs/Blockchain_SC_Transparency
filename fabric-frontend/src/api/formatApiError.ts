@@ -1,16 +1,27 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
+
+function resolveRequestUrl(cfg: { baseURL?: string; url?: string } | undefined, attemptedUrl: string): string {
+  if (cfg?.baseURL || cfg?.url) {
+    const base = (cfg.baseURL ?? '').replace(/\/$/, '');
+    const path = cfg.url ?? '';
+    if (base && (path.startsWith('http://') || path.startsWith('https://'))) return path;
+    return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+  }
+  if (attemptedUrl.startsWith('http://') || attemptedUrl.startsWith('https://')) {
+    return attemptedUrl;
+  }
+  const base = API_BASE_URL.replace(/\/$/, '');
+  const path = attemptedUrl.startsWith('/') ? attemptedUrl : `/${attemptedUrl}`;
+  return `${base}${path}`;
+}
 
 /** Turn axios/network failures into a readable, actionable message. */
 export function formatApiError(error: unknown, attemptedUrl: string): string {
   if (axios.isAxiosError(error)) {
     const cfg = error.config;
     const method = (cfg?.method ?? 'GET').toUpperCase();
-    const absoluteUrl =
-      attemptedUrl.startsWith('http://') || attemptedUrl.startsWith('https://')
-        ? attemptedUrl
-        : typeof window !== 'undefined'
-          ? `${window.location.origin}${attemptedUrl.startsWith('/') ? attemptedUrl : `/${attemptedUrl}`}`
-          : attemptedUrl;
+    const absoluteUrl = resolveRequestUrl(cfg, attemptedUrl);
 
     if (error.response) {
       const status = error.response.status;

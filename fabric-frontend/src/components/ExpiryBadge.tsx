@@ -14,7 +14,8 @@ export const ExpiryBadge: React.FC<ExpiryBadgeProps> = ({
     'badge',
     {
       'badge-danger': level === 'expired',
-      'bg-orange-100 text-orange-800': level === 'urgent',
+      'bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-100':
+        level === 'urgent',
       'badge-warning': level === 'warning',
       'badge-success': level === 'safe',
     },

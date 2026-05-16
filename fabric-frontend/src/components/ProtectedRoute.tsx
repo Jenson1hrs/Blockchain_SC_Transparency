@@ -19,7 +19,7 @@ export default function ProtectedRoute({
   if (loading) {
     return (
       <AppShell title={t('common.loading')} subtitle={t('common.loadingSession')}>
-        <div className="card p-8 text-center text-gray-600 animate-fade-up">{t('common.loading')}</div>
+        <div className="card p-8 text-center text-gray-600 dark:text-neutral-200 animate-fade-up">{t('common.loading')}</div>
       </AppShell>
     );
   }

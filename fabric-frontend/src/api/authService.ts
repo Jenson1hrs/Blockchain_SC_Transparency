@@ -41,23 +41,20 @@ export interface RegisterBody {
   preferredLanguage?: string;
 }
 
-export async function registerApi(body: RegisterBody): Promise<LoginResult> {
+export interface RegisterResult {
+  success: boolean;
+  message?: string;
+}
+
+/** Registration does not return a session — user must sign in. */
+export async function registerApi(body: RegisterBody): Promise<RegisterResult> {
   const url = 'auth/register';
   try {
-    const res = await apiClient.post<{
-      success: boolean;
-      token?: string;
-      user?: AuthUser;
-      message?: string;
-    }>(url, body);
-    if (!res.data.success || !res.data.token || !res.data.user) {
+    const res = await apiClient.post<{ success: boolean; message?: string }>(url, body);
+    if (!res.data.success) {
       return { success: false, message: res.data.message || 'Registration failed' };
     }
-    return {
-      success: true,
-      token: res.data.token,
-      user: res.data.user,
-    };
+    return { success: true, message: res.data.message };
   } catch (e) {
     return { success: false, message: formatApiError(e, url) };
   }
@@ -78,6 +75,12 @@ export async function updateMeApi(body: {
   allergies?: string;
   dietaryPreference?: string;
   preferredLanguage?: string;
+  themePreference?: 'light' | 'dark';
+  companyName?: string;
+  companyDescription?: string;
+  companyWebsite?: string;
+  companyLogoUrl?: string;
+  companyLocation?: string;
 }): Promise<{ success: boolean; user?: AuthUser; message?: string }> {
   const url = 'auth/me';
   try {

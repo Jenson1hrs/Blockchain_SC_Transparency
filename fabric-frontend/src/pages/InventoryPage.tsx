@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../components/AppShell';
 import { Button, Alert, ProductCard } from '../components';
+import { useAuth } from '../context/AuthContext';
+import { getPersonalizedAlerts } from '../utils/personalizedAlerts';
 import type { Product } from '../types';
 import { getProduct } from '../api/productService';
 import { fetchUserInventory, removeFromUserInventory } from '../api/inventoryService';
@@ -11,6 +13,7 @@ type InventoryFilter = 'all' | 'expired' | 'urgent' | 'warning' | 'safe';
 type SortMode = 'expiryAsc' | 'expiryDesc' | 'nameAsc';
 
 const InventoryPage = () => {
+  const { user } = useAuth();
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,8 +115,8 @@ const InventoryPage = () => {
         <div className="card p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-900">Saved Products</h2>
-              <p className="text-sm text-neutral-600 mt-1">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Saved Products</h2>
+              <p className="text-sm text-neutral-600 dark:text-neutral-200 mt-1">
                 {items.length} product{items.length !== 1 ? 's' : ''} in your inventory
               </p>
             </div>
@@ -126,7 +129,7 @@ const InventoryPage = () => {
         {/* Loading State */}
         {loading && (
           <div className="card p-12 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-100 text-primary-600 rounded-full mb-4">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300 rounded-full mb-4">
               <svg className="animate-spin w-6 h-6" fill="none" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
@@ -143,8 +146,8 @@ const InventoryPage = () => {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">Loading Inventory</h3>
-            <p className="text-neutral-600">Fetching your saved products...</p>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Loading Inventory</h3>
+            <p className="text-neutral-600 dark:text-neutral-200">Fetching your saved products...</p>
           </div>
         )}
 
@@ -154,7 +157,7 @@ const InventoryPage = () => {
         {/* Empty State */}
         {!loading && items.length === 0 && (
           <div className="card p-12 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-neutral-100 text-neutral-600 rounded-full mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-200 rounded-full mb-6">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
@@ -164,8 +167,8 @@ const InventoryPage = () => {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-neutral-900 mb-2">No Products Saved</h3>
-            <p className="text-neutral-600 mb-8 max-w-md mx-auto">
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">No Products Saved</h3>
+            <p className="text-neutral-600 dark:text-neutral-200 mb-8 max-w-md mx-auto">
               Your inventory is empty. Verify a product and save it here for quick access.
             </p>
             <Button as={Link} to="/verify" size="lg">
@@ -189,7 +192,7 @@ const InventoryPage = () => {
                       className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
                         filter === option.id
                           ? 'bg-primary-600 text-white border-primary-600'
-                          : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
+                          : 'bg-white dark:bg-neutral-900/80 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800'
                       }`}
                     >
                       {option.label}
@@ -197,7 +200,7 @@ const InventoryPage = () => {
                         className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
                           filter === option.id
                             ? 'bg-white/20 text-white'
-                            : 'bg-neutral-100 text-neutral-600'
+                            : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-200'
                         }`}
                       >
                         {option.count}
@@ -207,7 +210,7 @@ const InventoryPage = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <label htmlFor="sort-select" className="text-sm font-medium text-neutral-700">
+                  <label htmlFor="sort-select" className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
                     Sort by:
                   </label>
                   <select
@@ -230,11 +233,14 @@ const InventoryPage = () => {
             <div className="space-y-6">
               {filteredAndSorted.length === 0 ? (
                 <div className="card p-8 text-center">
-                  <p className="text-neutral-600">No products match the selected filter.</p>
+                  <p className="text-neutral-600 dark:text-neutral-200">No products match the selected filter.</p>
                 </div>
               ) : (
                 filteredAndSorted.map((product) => {
                   const reminder = getExpiryReminder(product.expiryDate);
+                  const personalizedAlerts = user
+                    ? getPersonalizedAlerts(product, user)
+                    : undefined;
                   return (
                     <ProductCard
                       key={product.productId}
@@ -248,6 +254,7 @@ const InventoryPage = () => {
                         imageUrl: product.imageUrl ?? undefined,
                       }}
                       expiryReminder={reminder || undefined}
+                      personalizedAlerts={personalizedAlerts}
                       actions={
                         <div className="flex gap-2">
                           <Button

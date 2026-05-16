@@ -7,6 +7,10 @@ const authRoutes = require('./routes/authRoutes');
 const healthRoutes = require('./routes/healthRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const organizationRoutes = require('./routes/organizationRoutes');
+const regulatorRoutes = require('./routes/regulatorRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
@@ -31,16 +35,21 @@ app.use(cors({
     const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
     return callback(new Error(msg), false);
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   credentials: true
 }));
 
-app.use(express.json());
+/** Default express.json limit is 100kb — base64 product images exceed that → 413 */
+app.use(express.json({ limit: '15mb' }));
 
 app.use('/auth', authRoutes);
 app.use('/health', healthRoutes);
 app.use('/admin', adminRoutes);
 app.use('/inventory', inventoryRoutes);
+app.use('/dashboard', dashboardRoutes);
+app.use('/organization', organizationRoutes);
+app.use('/regulator', regulatorRoutes);
+app.use('/users', userRoutes);
 app.use('/', productRoutes);
 
 const PORT = process.env.PORT || 3000;

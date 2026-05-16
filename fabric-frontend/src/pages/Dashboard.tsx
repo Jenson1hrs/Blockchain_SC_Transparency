@@ -1,7 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 import AppShell from '../components/AppShell';
+import { DashboardAnalytics } from '../components/DashboardAnalytics';
 import { useAuth } from '../context/AuthContext';
+import { useDashboardSummary } from '../hooks/useDashboardSummary';
 import { Button, Alert } from '../components';
+import { DASHBOARD_ROLE_HEADING, ROLE_LABEL_PROFESSIONAL } from '../constants/dashboardRoleCopy';
 import type { UserRole } from '../types';
 
 type ActionCard = {
@@ -88,23 +91,23 @@ function cardsFor(role: UserRole | null): ActionCard[] {
     return [
       {
         title: 'Create Product',
-        description: 'Register product and generate QR.',
+        description: 'Register on the ledger and generate QR.',
         to: '/create',
         icon: '➕',
         color: 'primary',
       },
       {
-        title: 'View QR',
-        description: 'Use Verify page action to open QR by product ID.',
-        to: '/verify',
-        icon: '📱',
+        title: 'My Products',
+        description: 'View your registered products and status.',
+        to: '/my-products',
+        icon: '📦',
         color: 'neutral',
       },
       {
-        title: 'Verify Product',
-        description: 'Check product details and history.',
+        title: 'Verify & Trace',
+        description: 'Authenticity, metadata, QR, and chain history.',
         to: '/verify',
-        icon: '✅',
+        icon: '🔍',
         color: 'success',
       },
     ];
@@ -212,16 +215,24 @@ export default function Dashboard() {
     ?.flashSuccess;
   const cards = cardsFor(user?.role ?? null);
 
+  const {
+    loading: summaryLoading,
+    error: summaryError,
+    payload: summaryPayload,
+    refresh: refreshSummary,
+    isRefreshing,
+  } = useDashboardSummary(!!user);
+
   const getColorClasses = (color: ActionCard['color']) => {
     switch (color) {
       case 'primary':
-        return 'hover:border-primary-200 hover:shadow-primary-100/50';
+        return 'hover:border-primary-300 dark:hover:border-primary-600/65 hover:shadow-primary-200/40 dark:hover:shadow-primary-900/35';
       case 'success':
-        return 'hover:border-success-200 hover:shadow-success-100/50';
+        return 'hover:border-success-300 dark:hover:border-success-600/60 hover:shadow-success-200/40 dark:hover:shadow-success-900/30';
       case 'warning':
-        return 'hover:border-warning-200 hover:shadow-warning-100/50';
+        return 'hover:border-warning-300 dark:hover:border-warning-600/55 hover:shadow-warning-200/40 dark:hover:shadow-warning-900/25';
       default:
-        return 'hover:border-neutral-200 hover:shadow-neutral-100/50';
+        return 'hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-neutral-200/30 dark:hover:shadow-black/35';
     }
   };
 
@@ -229,49 +240,77 @@ export default function Dashboard() {
     <AppShell
       title="Dashboard"
       subtitle={
-        user ? `Welcome back, ${user.name}` : 'Public verification available'
+        user
+          ? `${user.name} · ${ROLE_LABEL_PROFESSIONAL[user.role]}`
+          : 'Public verification workspace'
       }
     >
       <div className="space-y-8 animate-fade-up">
         {/* Welcome Section */}
-        <div className="card p-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 text-primary-600 rounded-full text-2xl mb-4">
-            {user ? '👋' : '🔍'}
+        <div className="card-soft overflow-hidden border border-neutral-200/75 shadow-soft dark:border-neutral-600/75">
+          <div className="flex flex-col md:flex-row md:items-start gap-6 sm:gap-8 p-6 sm:p-8">
+            <div className="flex shrink-0 justify-center md:justify-start md:pt-0.5">
+              <div
+                className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-100 text-2xl text-primary-600 shadow-inner dark:bg-primary-900/45 dark:text-primary-300"
+                aria-hidden
+              >
+                {user ? '👋' : '🔍'}
+              </div>
+            </div>
+            <div className="min-w-0 flex-1 space-y-3 text-center md:text-left">
+              <h2 className="text-2xl font-bold tracking-tight text-page-title">
+                {user ? `Hello, ${user.name}` : 'Supply chain verification'}
+              </h2>
+              {user ? (
+                <p className="mx-auto max-w-prose text-base leading-relaxed text-page-body sm:text-[1.0625rem] md:mx-0">
+                  {DASHBOARD_ROLE_HEADING[user.role]}
+                </p>
+              ) : (
+                <p className="mx-auto max-w-prose text-base leading-relaxed text-page-body md:mx-0">
+                  Authenticate products using QR codes linked to the distributed ledger. Sign in to access
+                  role-specific supply chain operations.
+                </p>
+              )}
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-neutral-900 mb-2">
-            {user
-              ? `Hello, ${user.name}!`
-              : 'Welcome to Supply Chain Verification'}
-          </h2>
-          <p className="text-neutral-600 max-w-2xl mx-auto">
-            {user
-              ? `You are logged in as a ${user.role}. Access your role-specific features below.`
-              : 'Verify product authenticity using QR codes. Sign in for additional features.'}
-          </p>
         </div>
 
         {/* Success Message */}
         {flashSuccess && <Alert type="success">{flashSuccess}</Alert>}
 
+        {user && (
+          <DashboardAnalytics
+            role={user.role}
+            loading={summaryLoading}
+            error={summaryError}
+            payload={summaryPayload}
+            onRefresh={refreshSummary}
+            isRefreshing={isRefreshing}
+          />
+        )}
+
         {/* Quick Actions Grid */}
         <div>
-          <h3 className="text-lg font-semibold text-neutral-900 mb-6">
-            Quick Actions
-          </h3>
+          <div className="mb-6 space-y-1">
+            <h3 className="text-lg font-semibold text-page-title">Quick actions</h3>
+            <p className="text-sm text-page-muted max-w-2xl">
+              Shortcuts to primary workflows for your role.
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cards.map((card) => (
               <Link
                 key={card.title}
                 to={card.to}
-                className={`card p-6 transition-all duration-200 ${getColorClasses(card.color)} group`}
+                className={`card p-6 transition-all duration-300 motion-safe:ease-out ${getColorClasses(card.color)} group hover:-translate-y-1`}
               >
                 <div className="flex items-start gap-4">
                   <div className="text-2xl">{card.icon}</div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-neutral-900 group-hover:text-primary-600 transition-colors">
+                    <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                       {card.title}
                     </h4>
-                    <p className="text-sm text-neutral-600 mt-1">
+                    <p className="text-sm text-neutral-600 dark:text-neutral-200 mt-1">
                       {card.description}
                     </p>
                   </div>
@@ -281,97 +320,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Stats Section (if user is logged in) */}
-        {user && (
-          <div>
-            <h3 className="text-lg font-semibold text-neutral-900 mb-6">
-              Overview
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="card p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-primary-100 text-primary-600 rounded-lg">
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-neutral-900">0</p>
-                    <p className="text-sm text-neutral-600">
-                      Products Verified
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="card p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-warning-100 text-warning-600 rounded-lg">
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-neutral-900">0</p>
-                    <p className="text-sm text-neutral-600">Expiring Soon</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="card p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-success-100 text-success-600 rounded-lg">
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-neutral-900">0</p>
-                    <p className="text-sm text-neutral-600">In Inventory</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* CTA for non-logged-in users */}
         {!user && (
-          <div className="card p-8 text-center bg-gradient-to-r from-primary-50 to-primary-100/50">
-            <h3 className="text-xl font-semibold text-neutral-900 mb-2">
+          <div className="card p-8 text-center bg-gradient-to-r from-primary-50 to-primary-100/50 dark:from-primary-950/55 dark:to-primary-900/30 border-primary-100/80 dark:border-primary-800/50">
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
               Ready to get started?
             </h3>
-            <p className="text-neutral-600 mb-6">
+            <p className="text-neutral-600 dark:text-neutral-200 mb-6">
               Create an account to access role-based features and manage your
               inventory.
             </p>

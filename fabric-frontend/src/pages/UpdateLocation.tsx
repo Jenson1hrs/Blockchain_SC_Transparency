@@ -52,7 +52,7 @@ const UpdateLocation = () => {
           className="card p-6 space-y-4 mb-8 animate-fade-up"
         >
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-neutral-200 mb-1">
               Product ID
             </label>
             <input
@@ -77,7 +77,7 @@ const UpdateLocation = () => {
             </Link>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-neutral-200 mb-1">
               New Location
             </label>
             <input
@@ -115,15 +115,15 @@ const UpdateLocation = () => {
             </div>
             <div className="p-6 grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-500">Product ID</p>
+                <p className="text-gray-500 dark:text-neutral-200">Product ID</p>
                 <p className="font-mono">{product.productId}</p>
                 <Link to={`/qr/${encodeURIComponent(product.productId)}`} className="text-xs text-blue-600 hover:underline">
                   View QR code
                 </Link>
               </div>
-              <div><p className="text-gray-500">Location</p><p className="font-medium">{product.location}</p></div>
-              <div><p className="text-gray-500">Owner</p><p className="font-medium">{product.owner}</p></div>
-              <div><p className="text-gray-500">Status</p><p className="font-medium">{product.status}</p></div>
+              <div><p className="text-gray-500 dark:text-neutral-200">Location</p><p className="font-medium text-neutral-900 dark:text-neutral-100">{product.location}</p></div>
+              <div><p className="text-gray-500 dark:text-neutral-200">Owner</p><p className="font-medium text-neutral-900 dark:text-neutral-100">{product.owner}</p></div>
+              <div><p className="text-gray-500 dark:text-neutral-200">Status</p><p className="font-medium text-neutral-900 dark:text-neutral-100">{product.status}</p></div>
             </div>
           </div>
         )}
@@ -138,9 +138,9 @@ const UpdateLocation = () => {
                 <div key={`${entry.txId}-${index}`} className="p-4 hover:bg-gray-50">
                   <div className="flex justify-between gap-4">
                     <span className="text-sm font-medium">{entry.data.status}</span>
-                    <span className="text-xs text-gray-500">{formatHistoryTimestamp(entry)}</span>
+                    <span className="text-xs text-gray-500 dark:text-neutral-200">{formatHistoryTimestamp(entry)}</span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-600 dark:text-neutral-200 mt-1">
                     Owner: {entry.data.owner} | Location: {entry.data.location}
                   </p>
                 </div>

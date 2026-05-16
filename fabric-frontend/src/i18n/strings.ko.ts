@@ -176,7 +176,7 @@ export const STRINGS_KO: Record<string, string> = {
   'landing.cardTraceTitle': '추적 가능성',
   'landing.cardTraceSub': '제조부터 판매까지 제품 여정.',
   'landing.cardExpiryTitle': '만료 알림',
-  'landing.cardExpirySub': '만료일에 앞서 이메일로 알림을 준비하세요.',
+  'landing.cardExpirySub': '만료일에 앞서 앱 내 알림으로 미리 대비하세요.',
 
   'landing.featuresHeading': '현대 공급망을 위한 강력한 기능',
   'landing.featuresSub':

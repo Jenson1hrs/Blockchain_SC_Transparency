@@ -10,18 +10,25 @@ router.post(
   authorizeRoles('manufacturer', 'admin'),
   controller.createProduct
 );
+router.get('/products/search', controller.searchProducts);
+router.get(
+  '/products/assigned',
+  authenticateUser,
+  authorizeRoles('manufacturer', 'distributor', 'retailer'),
+  controller.listAssignedProducts
+);
 router.get('/product/:id', controller.getProduct);
 router.get('/expiring', controller.getExpiringProducts);
 router.post(
   '/transfer',
   authenticateUser,
-  authorizeRoles('distributor', 'retailer', 'admin'),
+  authorizeRoles('manufacturer', 'distributor', 'retailer', 'admin'),
   controller.transferProduct
 );
 router.post(
   '/location',
   authenticateUser,
-  authorizeRoles('distributor', 'retailer', 'admin'),
+  authorizeRoles('manufacturer', 'distributor', 'retailer', 'admin'),
   controller.updateLocation
 );
 router.get('/history/:id', controller.getHistory);

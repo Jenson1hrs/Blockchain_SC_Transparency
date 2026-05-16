@@ -42,7 +42,7 @@ const ProductQr = () => {
       <div className="max-w-2xl mx-auto">
         <div className="card overflow-hidden animate-fade-up">
           <div className="p-6 space-y-6">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-neutral-200">
               Product ID: <span className="font-mono">{productId}</span>
             </p>
 
@@ -62,7 +62,7 @@ const ProductQr = () => {
                   />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">Verification URL</p>
+                  <p className="text-sm text-gray-600 dark:text-neutral-200 mb-2">Verification URL</p>
                   <div className="flex flex-wrap gap-2 items-center">
                     <code className="text-xs bg-gray-100 px-2 py-1 rounded break-all flex-1 min-w-0">
                       {data.qrUrl}

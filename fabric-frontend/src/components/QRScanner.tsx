@@ -90,7 +90,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan }) => {
   return (
     <div className="w-full max-w-md mx-auto space-y-4">
       {!cameraAllowed && (
-        <div className="text-sm rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
+        <div className="text-sm rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900 dark:border-amber-700/70 dark:bg-amber-950/40 dark:text-amber-100">
           <p className="font-medium">Camera unavailable in this browser context</p>
           <p className="mt-1 text-xs leading-relaxed">
             At <strong>http://YOUR-LAN-IP:5173</strong> browsers treat the page as insecure, so{' '}
@@ -107,7 +107,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan }) => {
         <>
           <div id={liveMountId} className="w-full rounded-lg overflow-hidden shadow-lg min-h-[200px]" />
           {camError && (
-            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 whitespace-pre-wrap">
+            <p className="text-sm text-red-700 dark:text-red-200 bg-red-50 dark:bg-red-950/35 border border-red-200 dark:border-red-900/60 rounded-lg px-3 py-2 whitespace-pre-wrap">
               {camError}
             </p>
           )}
@@ -121,16 +121,16 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan }) => {
       />
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-gray-700">Pick QR from photo (gallery or shot)</label>
+        <label className="text-sm font-medium text-gray-700 dark:text-neutral-200">Pick QR from photo (gallery or shot)</label>
         <input
           type="file"
           accept="image/*"
           capture="environment"
           onChange={(ev) => void onPickFile(ev)}
-          className="text-sm w-full border border-gray-300 rounded-lg p-2 bg-white"
+          className="text-sm w-full border border-gray-300 dark:border-neutral-600 rounded-lg p-2 bg-white dark:bg-neutral-800 dark:text-neutral-100"
         />
         {fileError && (
-          <p className="text-sm text-red-600">{fileError}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">{fileError}</p>
         )}
       </div>
     </div>

@@ -176,7 +176,7 @@ export const STRINGS_TA: Record<string, string> = {
   'landing.cardTraceTitle': 'கண்காணிப்பு',
   'landing.cardTraceSub': 'தயாரிப்பிலிருந்து விற்பனை வரை முழு பயணம்.',
   'landing.cardExpiryTitle': 'காலாவதி எச்சரிக்கைகள்',
-  'landing.cardExpirySub': 'காலாவதிக்கு முன் மின்னஞ்சல் நினைவூட்டல்களுக்கு தயாராக இரு.',
+  'landing.cardExpirySub': 'காலாவதிக்கு முன் செயலியுள் அறிவிப்புகளுடன் முன்னெச்சரிக்கையாக இருங்கள்.',
 
   'landing.featuresHeading': 'நவீன விநியோக சங்கிலிகளுக்கான வலிமையான அம்சங்கள்',
   'landing.featuresSub':

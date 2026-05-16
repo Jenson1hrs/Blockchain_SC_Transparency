@@ -33,9 +33,11 @@ export const TextField: React.FC<TextFieldProps> = ({
         })}
         {...props}
       />
-      {error && <p className="mt-1 text-sm text-danger-600">{error}</p>}
+      {error && (
+        <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">{error}</p>
+      )}
       {helperText && !error && (
-        <p className="mt-1 text-sm text-neutral-500">{helperText}</p>
+        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-300">{helperText}</p>
       )}
     </div>
   );

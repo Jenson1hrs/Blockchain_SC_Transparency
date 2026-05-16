@@ -1,10 +1,12 @@
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { fetchUserInventory } from '../api/inventoryService';
 import { useI18n } from '../context/I18nContext';
 import { getToken } from '../utils/authStorage';
 import type { UserRole } from '../types';
+import { ThemeToggle } from './ThemeToggle';
+import { Footer } from './Footer';
 
 interface AppShellProps {
   title: string;
@@ -30,18 +32,30 @@ function mainNavForRole(role: UserRole | null, authed: boolean): NavItem[] {
       { to: '/profile', labelKey: 'nav.profile' },
     ];
   }
-  if (role === 'manufacturer') {
+  if (role === 'regulator') {
     return [
       { to: '/home', labelKey: 'nav.home' },
       { to: '/verify', labelKey: 'nav.verify' },
+      { to: '/regulator/organizations', labelKey: 'nav.regulatorOrgs' },
+      { to: '/regulator/products', labelKey: 'nav.regulatorProducts' },
+      { to: '/regulator/transparency', labelKey: 'nav.regulatorTransparency' },
+      { to: '/profile', labelKey: 'nav.profile' },
+    ];
+  }
+  if (role === 'manufacturer') {
+    return [
+      { to: '/home', labelKey: 'nav.home' },
       { to: '/create', labelKey: 'nav.create' },
-      { to: '/expiring', labelKey: 'nav.expiring' },
+      { to: '/my-products', labelKey: 'nav.myProducts' },
+      { to: '/transfer', labelKey: 'nav.transfer' },
+      { to: '/verify', labelKey: 'nav.verify' },
       { to: '/profile', labelKey: 'nav.profile' },
     ];
   }
   if (role === 'distributor' || role === 'retailer') {
     return [
       { to: '/home', labelKey: 'nav.home' },
+      { to: '/assigned-products', labelKey: 'nav.assignedProducts' },
       { to: '/verify', labelKey: 'nav.verify' },
       { to: '/transfer', labelKey: 'nav.transfer' },
       { to: '/location', labelKey: 'nav.location' },
@@ -62,11 +76,15 @@ function mainNavForRole(role: UserRole | null, authed: boolean): NavItem[] {
 const navCls = ({ isActive }: { isActive: boolean }) =>
   `px-3 py-1.5 rounded-md text-sm transition-all duration-200 ${
     isActive
-      ? 'bg-blue-600 text-white shadow-sm'
-      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
+      ? 'bg-primary-600 text-white shadow-sm dark:bg-primary-600'
+      : 'text-neutral-700 hover:bg-primary-50 hover:text-primary-800 dark:text-neutral-100 dark:hover:bg-neutral-800/90 dark:hover:text-white'
   }`;
 
+const stickyBarClass =
+  'sticky top-0 z-50 mb-6 rounded-xl border border-primary-200/50 bg-gradient-to-r from-white/90 via-white/90 to-primary-50/40 px-3 py-2.5 shadow-sm shadow-primary-500/[0.06] backdrop-blur-xl dark:border-neutral-500/50 dark:from-neutral-900/90 dark:via-neutral-900/90 dark:to-[#0c1528]/90 dark:shadow-lg dark:shadow-black/25 sm:px-4';
+
 const AppShell = ({ title, subtitle, children }: AppShellProps) => {
+  const navigate = useNavigate();
   const { user, loading, logout } = useAuth();
   const { t } = useI18n();
   const [inventoryCount, setInventoryCount] = useState(0);
@@ -100,114 +118,125 @@ const AppShell = ({ title, subtitle, children }: AppShellProps) => {
   const showGuestLinks = !loading && !user;
   const showAvatarSkeleton = loading && Boolean(getToken());
 
-  return (
-    <div className="app-bg min-h-screen py-8 px-4">
-      <div className="max-w-5xl mx-auto animate-fade-up">
-        <header className="card p-5 md:p-6 mb-6">
-          <div className="flex flex-wrap gap-4 items-start justify-between">
-            <div className="min-w-0 flex-1 min-h-[3rem]">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">{title}</h1>
-              {subtitle ? (
-                <p className="text-sm text-gray-600 mt-1 max-w-2xl min-h-[1.25rem]">{subtitle}</p>
-              ) : (
-                <div className="mt-1 min-h-[1.25rem]" aria-hidden />
-              )}
-            </div>
-            <div className="flex flex-col items-end gap-2 shrink-0 w-full sm:w-auto sm:max-w-[min(100%,28rem)] min-h-[4.5rem]">
-              {loading ? (
-                <>
-                  <div
-                    className={`flex w-full justify-end ${showAvatarSkeleton ? 'min-h-10' : 'min-h-0'}`}
-                  >
-                    {showAvatarSkeleton && (
-                      <div
-                        className="h-10 w-10 rounded-full bg-neutral-200/80 animate-pulse"
-                        aria-hidden
-                      />
-                    )}
-                  </div>
-                  <div
-                    className="h-9 w-full min-w-[12rem] rounded-lg bg-neutral-100/90 animate-pulse"
-                    aria-hidden
-                  />
-                </>
-              ) : (
-                <>
-                  {user && (
-                    <div className="relative flex justify-end w-full min-h-10">
-                      <button
-                        type="button"
-                        onClick={() => setMenuOpen((s) => !s)}
-                        className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-black text-white hover:bg-gray-800 shadow-sm shrink-0"
-                        aria-label="Account menu"
-                      >
-                        <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor" aria-hidden="true">
-                          <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
-                        </svg>
-                      </button>
-                      {menuOpen && (
-                        <div className="absolute right-0 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg p-1 z-20">
-                          <div className="px-3 py-2 border-b border-gray-100">
-                            <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
-                            <p className="text-xs text-gray-500 capitalize">{user.role}</p>
-                          </div>
-                          <Link
-                            to="/profile"
-                            onClick={() => setMenuOpen(false)}
-                            className="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            {t('shell.profileSettings')}
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMenuOpen(false);
-                              logout();
-                            }}
-                            className="w-full text-left px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            {t('shell.logout')}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <nav className="flex flex-wrap gap-2 justify-end min-h-[2.25rem] items-center">
-                    {mainNav.map((item) => (
-                      <NavLink key={item.to} to={item.to} className={navCls}>
-                        {t(item.labelKey)}
-                        {item.badgeInventory && (
-                          <span className="ml-1.5 inline-flex min-w-5 justify-center rounded-full bg-black/10 px-1.5 text-[11px]">
-                            {inventoryCount}
-                          </span>
-                        )}
-                      </NavLink>
-                    ))}
-                    {showGuestLinks && (
-                      <>
-                        <NavLink to="/login" className={navCls}>
-                          {t('nav.login')}
-                        </NavLink>
-                        <NavLink to="/register" className={navCls}>
-                          {t('nav.register')}
-                        </NavLink>
-                      </>
-                    )}
-                  </nav>
-                </>
-              )}
-            </div>
+  const NavRow = () =>
+    loading ? (
+      <div
+        className="h-9 min-w-[12rem] flex-1 rounded-lg bg-neutral-100/90 animate-pulse dark:bg-neutral-800"
+        aria-hidden
+      />
+    ) : (
+      <nav className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2" aria-label="Main">
+        {mainNav.map((item) => (
+          <NavLink key={item.to} to={item.to} className={navCls}>
+            {t(item.labelKey)}
+            {item.badgeInventory && (
+              <span className="ml-1.5 inline-flex min-w-5 justify-center rounded-full bg-black/10 px-1.5 text-[11px] dark:bg-white/15 dark:text-neutral-100">
+                {inventoryCount}
+              </span>
+            )}
+          </NavLink>
+        ))}
+        {showGuestLinks && (
+          <>
+            <NavLink to="/login" className={navCls}>
+              {t('nav.login')}
+            </NavLink>
+            <NavLink to="/register" className={navCls}>
+              {t('nav.register')}
+            </NavLink>
+          </>
+        )}
+      </nav>
+    );
+
+  const Controls = () =>
+    loading ? (
+      <div className="flex shrink-0 items-center gap-2">
+        <ThemeToggle compact />
+        {showAvatarSkeleton ? (
+          <div
+            className="h-9 w-9 shrink-0 rounded-full bg-neutral-200/80 animate-pulse dark:bg-neutral-700"
+            aria-hidden
+          />
+        ) : null}
+      </div>
+    ) : (
+      <div className="flex shrink-0 items-center gap-2">
+        <ThemeToggle compact />
+        {user && (
+          <div className="relative flex justify-end">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((s) => !s)}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white shadow-sm hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
+              aria-label="Account menu"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
+              </svg>
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full z-[60] mt-2 w-56 rounded-lg border border-neutral-200 bg-white p-1 shadow-lg dark:border-neutral-500/60 dark:bg-neutral-900">
+                <div className="border-b border-neutral-100 px-3 py-2 dark:border-neutral-700">
+                  <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-50">{user.name}</p>
+                  <p className="text-xs capitalize text-neutral-500 dark:text-neutral-300">{user.role}</p>
+                </div>
+                <Link
+                  to="/profile"
+                  onClick={() => setMenuOpen(false)}
+                  className="block rounded-md px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 dark:text-neutral-100 dark:hover:bg-neutral-800"
+                >
+                  {t('shell.profileSettings')}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    logout();
+                    navigate('/login', { replace: true });
+                  }}
+                  className="w-full rounded-md px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-50 dark:text-neutral-100 dark:hover:bg-neutral-800"
+                >
+                  {t('shell.logout')}
+                </button>
+              </div>
+            )}
           </div>
+        )}
+      </div>
+    );
+
+  return (
+    <div className="app-bg min-h-screen px-4 py-8 sm:px-5">
+      <div className="mx-auto max-w-5xl animate-fade-up">
+        {/* Page title — scrolls with content */}
+        <div className="mb-5 md:mb-6">
+          <h1 className="text-2xl font-bold leading-tight text-page-title md:text-3xl">{title}</h1>
+          {subtitle ? (
+            <p className="mt-1.5 min-h-[1.25rem] max-w-2xl text-sm text-page-muted">{subtitle}</p>
+          ) : (
+            <div className="mt-1 min-h-[1.25rem]" aria-hidden />
+          )}
           {showGuestLinks && (
-            <p className="mt-3 text-xs text-gray-500 border-t border-gray-100 pt-3">
-              <Link className="text-blue-600 hover:underline font-medium" to="/login">
+            <p className="mt-4 text-xs text-page-muted">
+              <Link className="font-medium text-primary-600 hover:underline dark:text-primary-400" to="/login">
                 {t('shell.signInLink')}
               </Link>{' '}
               {t('shell.signInBlurb')}
             </p>
           )}
+        </div>
+
+        {/* Sticky navigation + theme + profile */}
+        <header className={stickyBarClass}>
+          <div className="flex flex-wrap items-center justify-between gap-2 gap-y-2.5">
+            <NavRow />
+            <Controls />
+          </div>
         </header>
+
         {children}
+        {user && <Footer user={user} />}
       </div>
     </div>
   );

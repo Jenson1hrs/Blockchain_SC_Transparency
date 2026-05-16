@@ -14,17 +14,25 @@ import Register from './pages/Register';
 import Profile from './pages/Profile';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminSystemPage from './pages/AdminSystemPage';
-import AdminAuditPage from './pages/AdminAuditPage';
-import AdminConfigPage from './pages/AdminConfigPage';
+import ManufacturerProductsPage from './pages/ManufacturerProductsPage';
+import AssignedProductsPage from './pages/AssignedProductsPage';
+import OrganizationProfile from './pages/OrganizationProfile';
+import OrganizationManagement from './pages/OrganizationManagement';
+import RegulatorProductsPage from './pages/RegulatorProductsPage';
+import RegulatorTransparencyPage from './pages/RegulatorTransparencyPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import type { UserRole } from './types';
 import './index.css';
 
-const ALL_ROLES: UserRole[] = ['admin', 'manufacturer', 'distributor', 'retailer', 'consumer'];
+const ALL_ROLES: UserRole[] = ['admin', 'manufacturer', 'distributor', 'retailer', 'consumer', 'regulator'];
+const REGULATOR_ONLY: UserRole[] = ['regulator'];
 const ADMIN_ONLY: UserRole[] = ['admin'];
 const INVENTORY_ROLES: UserRole[] = ['admin', 'consumer'];
 const CREATE_ROLES: UserRole[] = ['admin', 'manufacturer'];
-const MOVE_ROLES: UserRole[] = ['admin', 'distributor', 'retailer'];
+const MANUFACTURER_ONLY: UserRole[] = ['manufacturer'];
+const MOVE_ROLES: UserRole[] = ['admin', 'manufacturer', 'distributor', 'retailer'];
+const ASSIGNED_ROLES: UserRole[] = ['distributor', 'retailer'];
+const EXPIRING_ROLES: UserRole[] = ['admin', 'distributor', 'retailer', 'consumer'];
 
 function App() {
   return (
@@ -33,6 +41,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/verify" element={<VerifyProduct />} />
         <Route path="/verify-product" element={<VerifyProduct />} />
+        <Route path="/organization/:userId" element={<OrganizationProfile />} />
         <Route
           path="/home"
           element={
@@ -58,22 +67,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/admin/audit"
-          element={
-            <ProtectedRoute allowedRoles={ADMIN_ONLY}>
-              <AdminAuditPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/config"
-          element={
-            <ProtectedRoute allowedRoles={ADMIN_ONLY}>
-              <AdminConfigPage />
-            </ProtectedRoute>
-          }
-        />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
@@ -88,8 +81,25 @@ function App() {
         <Route
           path="/expiring"
           element={
-            <ProtectedRoute allowedRoles={ALL_ROLES}>
+            <ProtectedRoute allowedRoles={EXPIRING_ROLES}>
               <ExpiringProducts />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-products"
+          element={
+            <ProtectedRoute allowedRoles={MANUFACTURER_ONLY}>
+              <ManufacturerProductsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assigned-products"
+          element={
+            <ProtectedRoute allowedRoles={ASSIGNED_ROLES}>
+              <AssignedProductsPage />
             </ProtectedRoute>
           }
         />
@@ -124,6 +134,31 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={MOVE_ROLES}>
               <UpdateLocation />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/regulator/organizations"
+          element={
+            <ProtectedRoute allowedRoles={REGULATOR_ONLY}>
+              <OrganizationManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/regulator/products"
+          element={
+            <ProtectedRoute allowedRoles={REGULATOR_ONLY}>
+              <RegulatorProductsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/regulator/transparency"
+          element={
+            <ProtectedRoute allowedRoles={REGULATOR_ONLY}>
+              <RegulatorTransparencyPage />
             </ProtectedRoute>
           }
         />

@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createProduct } from '../api/productService';
-import { API_BASE_URL } from '../config';
 import AppShell from '../components/AppShell';
+import { useAuth } from '../context/AuthContext';
 import type { Product } from '../types';
 
 const CreateProduct = () => {
+  const { user } = useAuth();
+  const isManufacturer = user?.role === 'manufacturer';
+  const registeredAs =
+    user?.companyName?.trim() || user?.name?.trim() || 'Your organization';
   const [form, setForm] = useState({
     productId: '',
     name: '',
@@ -59,7 +63,11 @@ const CreateProduct = () => {
     setResult(null);
     setLoading(true);
     try {
-      const out = await createProduct(form);
+      const payload = {
+        ...form,
+        manufacturer: isManufacturer ? registeredAs : form.manufacturer,
+      };
+      const out = await createProduct(payload);
       setResult(out);
       setSuccess(`Product ${out.product.productId} created successfully.`);
       setForm({
@@ -86,31 +94,28 @@ const CreateProduct = () => {
   return (
     <AppShell title="Create Product" subtitle="Register a product on blockchain and generate QR.">
       <div className="max-w-2xl mx-auto">
-        <p className="text-xs text-gray-500 mb-6 font-mono break-all">
-          API base: {API_BASE_URL}
-          {import.meta.env.DEV && (
-            <span className="block mt-1 text-amber-700">
-              Dev: leave <code className="bg-amber-100 px-1">VITE_API_BASE_URL</code> unset to
-              use <code className="bg-amber-100 px-1">/api</code> proxy → port 3000
-            </span>
-          )}
-        </p>
-
         <form
           onSubmit={submit}
           className="card p-6 space-y-4 mb-8 animate-fade-up"
         >
+          {isManufacturer && (
+            <div className="rounded-lg border border-primary-200/80 bg-primary-50/50 px-4 py-3 text-sm text-page-body dark:border-primary-800/50 dark:bg-primary-950/30">
+              Products are registered under your organization:{' '}
+              <span className="font-semibold text-page-title">{registeredAs}</span>
+            </div>
+          )}
+
           {[
             ['productId', 'Product ID', 'text', 'e.g. P400'],
             ['name', 'Name', 'text', ''],
-            ['manufacturer', 'Manufacturer', 'text', ''],
+            ...(!isManufacturer ? [['manufacturer', 'Manufacturer', 'text', '']] as const : []),
             ['batchNumber', 'Batch number', 'text', ''],
             ['location', 'Location', 'text', ''],
             ['expiryDate', 'Expiry Date (optional)', 'date', ''],
-            ['halalStatus', 'Halal Status (optional)', 'text', 'Halal / Non-Halal / Unknown'],
+            ['halalStatus', 'Halal Status', 'text', 'Halal / Non-Halal / Unknown'],
           ].map(([key, label, type, ph]) => (
             <div key={key as string}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-neutral-200 mb-1">
                 {label}
               </label>
               <input
@@ -126,7 +131,7 @@ const CreateProduct = () => {
             </div>
           ))}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-neutral-200 mb-1">
               Product Image Upload (optional)
             </label>
             <input
@@ -135,12 +140,12 @@ const CreateProduct = () => {
               onChange={(e) => onPickImage(e.target.files?.[0] || null)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-sm"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-neutral-200 mt-1">
               Or keep using URL field by pasting into browser address bar and copy direct image link.
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-neutral-200 mb-1">
               Product Image URL (optional fallback)
             </label>
             <input
@@ -155,7 +160,7 @@ const CreateProduct = () => {
           </div>
           {(imagePreview || (form.imageUrl && !form.imageUrl.startsWith('data:'))) && (
             <div>
-              <p className="text-sm text-gray-600 mb-2">Image preview</p>
+              <p className="text-sm text-gray-600 dark:text-neutral-200 mb-2">Image preview</p>
               <img
                 src={imagePreview || form.imageUrl}
                 alt="Selected product preview"
@@ -169,7 +174,7 @@ const CreateProduct = () => {
             ['usageInstructions', 'Usage Instructions (optional)', 'e.g. Keep refrigerated after opening'],
           ].map(([key, label, ph]) => (
             <div key={key as string}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-neutral-200 mb-1">
                 {label}
               </label>
               <textarea
@@ -210,35 +215,35 @@ const CreateProduct = () => {
             <div className="p-6 space-y-6">
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <div>
-                  <dt className="text-gray-500">Product ID</dt>
-                  <dd className="font-mono font-medium">{result.product.productId}</dd>
+                  <dt className="text-gray-500 dark:text-neutral-200">Product ID</dt>
+                  <dd className="font-mono font-medium text-neutral-900 dark:text-neutral-100">{result.product.productId}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Name</dt>
-                  <dd className="font-medium">{result.product.name}</dd>
+                  <dt className="text-gray-500 dark:text-neutral-200">Name</dt>
+                  <dd className="font-medium text-neutral-900 dark:text-neutral-100">{result.product.name}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Manufacturer</dt>
-                  <dd>{result.product.manufacturer}</dd>
+                  <dt className="text-gray-500 dark:text-neutral-200">Manufacturer</dt>
+                  <dd className="text-neutral-900 dark:text-neutral-100">{result.product.manufacturer}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Batch</dt>
-                  <dd className="font-mono">{result.product.batchNumber}</dd>
+                  <dt className="text-gray-500 dark:text-neutral-200">Batch</dt>
+                  <dd className="font-mono text-neutral-900 dark:text-neutral-100">{result.product.batchNumber}</dd>
                 </div>
                 <div className="sm:col-span-2">
-                  <dt className="text-gray-500">Location</dt>
-                  <dd>{result.product.location}</dd>
+                  <dt className="text-gray-500 dark:text-neutral-200">Location</dt>
+                  <dd className="text-neutral-900 dark:text-neutral-100">{result.product.location}</dd>
                 </div>
                 {result.product.expiryDate && (
                   <div className="sm:col-span-2">
-                    <dt className="text-gray-500">Expiry Date</dt>
-                    <dd>{result.product.expiryDate}</dd>
+                    <dt className="text-gray-500 dark:text-neutral-200">Expiry Date</dt>
+                    <dd className="text-neutral-900 dark:text-neutral-100">{result.product.expiryDate}</dd>
                   </div>
                 )}
                 {result.product.halalStatus && (
                   <div>
-                    <dt className="text-gray-500">Halal Status</dt>
-                    <dd>{result.product.halalStatus}</dd>
+                    <dt className="text-gray-500 dark:text-neutral-200">Halal Status</dt>
+                    <dd className="text-neutral-900 dark:text-neutral-100">{result.product.halalStatus}</dd>
                   </div>
                 )}
               </dl>
@@ -253,7 +258,7 @@ const CreateProduct = () => {
               )}
 
               <div>
-                <p className="text-sm text-gray-600 mb-2">Verification URL</p>
+                <p className="text-sm text-gray-600 dark:text-neutral-200 mb-2">Verification URL</p>
                 {(result.qrRaw.includes('localhost') ||
                   result.qrRaw.includes('127.0.0.1')) && (
                   <div className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
@@ -281,7 +286,7 @@ const CreateProduct = () => {
               </div>
 
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-2">QR code</p>
+                <p className="text-sm text-gray-600 dark:text-neutral-200 mb-2">QR code</p>
                 <img
                   src={result.qrCode}
                   alt="Product verification QR"

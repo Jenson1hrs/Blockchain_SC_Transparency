@@ -1,6 +1,13 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { getProduct, getProductHistory, verifyQr } from '../api/productService';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import {
+  getProduct,
+  getProductHistory,
+  verifyQr,
+  getManufacturerDisplayLabel,
+  searchProducts,
+  type ProductSearchResult,
+} from '../api/productService';
 import type { Product, ProductHistory } from '../types';
 import QRScanner from '../components/QRScanner';
 import AppShell from '../components/AppShell';
@@ -12,16 +19,26 @@ import {
   ProductStatusBadge,
   ExpiryBadge,
   ProductTimeline,
+  PersonalizedAlertsPanel,
 } from '../components';
 import { formatHistoryTimestamp } from '../utils/historyTime';
 import { parseQrPayload } from '../utils/parseQrPayload';
 import { getExpiryReminder } from '../utils/expiryReminder';
 import { useAuth } from '../context/AuthContext';
 import { addToUserInventory } from '../api/inventoryService';
+import {
+  VerifiedOrganizationBadge,
+  VerificationBadge,
+  OrganizationFlaggedBadge,
+} from '../components/VerificationBadge';
+import { OrganizationLink } from '../components/OrganizationLink';
 
 const VerifyProduct: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const [query, setQuery] = useState('');
   const [productId, setProductId] = useState('');
+  const [searchResults, setSearchResults] = useState<ProductSearchResult[] | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
   const [history, setHistory] = useState<ProductHistory[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,9 +48,45 @@ const VerifyProduct: React.FC = () => {
   const [inventoryMsg, setInventoryMsg] = useState<string | null>(null);
   const [zoomImage, setZoomImage] = useState<string | null>(null);
 
-  const handleVerify = async () => {
-    if (!productId.trim()) {
-      setError('Please enter a Product ID');
+  useEffect(() => {
+    const fromState = (location.state as { productId?: string } | null)?.productId;
+    if (fromState && String(fromState).trim()) {
+      const id = String(fromState).trim();
+      setQuery(id);
+      setProductId(id);
+    }
+  }, [location.state]);
+
+  const loadProductById = async (id: string) => {
+    const trimmed = id.trim();
+    if (!trimmed) {
+      setError('Please enter a product ID or search term');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setProduct(null);
+    setHistory(null);
+    setSearchResults(null);
+    setProductId(trimmed);
+
+    try {
+      const p = await getProduct(trimmed);
+      setProduct(p);
+      setQuery(trimmed);
+      const h = await getProductHistory(trimmed);
+      setHistory(h);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Product not found or failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    const term = query.trim();
+    if (!term) {
+      setError('Enter a product ID, name, manufacturer, or batch number');
       return;
     }
 
@@ -41,20 +94,40 @@ const VerifyProduct: React.FC = () => {
     setError(null);
     setProduct(null);
     setHistory(null);
+    setSearchResults(null);
 
     try {
-      const p = await getProduct(productId.trim());
-      setProduct(p);
-      const h = await getProductHistory(productId.trim());
-      setHistory(h);
+      const exactIdMatch = /^[A-Za-z0-9_-]+$/.test(term);
+      if (exactIdMatch) {
+        try {
+          const p = await getProduct(term);
+          setProduct(p);
+          setProductId(term);
+          setHistory(await getProductHistory(term));
+          return;
+        } catch {
+          /* fall through to search */
+        }
+      }
+
+      const results = await searchProducts(term);
+      if (results.length === 0) {
+        setError('No products matched your search. Try another keyword or check the product ID.');
+        return;
+      }
+      if (results.length === 1 && results[0].productId.toLowerCase() === term.toLowerCase()) {
+        await loadProductById(results[0].productId);
+        return;
+      }
+      setSearchResults(results);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Product not found or failed',
-      );
+      setError(err instanceof Error ? err.message : 'Search failed');
     } finally {
       setLoading(false);
     }
   };
+
+  const handleVerify = () => void loadProductById(query || productId);
 
   const handleScan = async (scannedText: string) => {
     const parsed = parseQrPayload(scannedText);
@@ -126,11 +199,12 @@ const VerifyProduct: React.FC = () => {
         {/* Verification Form */}
         <div className="card p-8">
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-neutral-900 mb-2">
+            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
               Verify Product
             </h2>
-            <p className="text-neutral-600">
-              Enter a product ID or scan a QR code to verify authenticity
+            <p className="text-neutral-600 dark:text-neutral-200">
+              Search by product ID, name, manufacturer, or batch. QR scan remains the trusted
+              verification path.
             </p>
           </div>
 
@@ -138,26 +212,33 @@ const VerifyProduct: React.FC = () => {
             className="space-y-6"
             onSubmit={(e) => {
               e.preventDefault();
-              void handleVerify();
+              void handleSearch();
             }}
           >
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <TextField
-                  label="Product ID"
-                  value={productId}
-                  onChange={(e) => setProductId(e.target.value)}
-                  placeholder="e.g. P999"
-                  helperText="Enter the product ID to verify"
+                  label="Search products"
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setProductId(e.target.value);
+                  }}
+                  placeholder="Product ID, name, manufacturer, or batch"
+                  helperText="Multiple matches require selecting a product below"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 items-end">
+                <Button type="submit" isLoading={loading} className="whitespace-nowrap">
+                  {loading ? 'Searching…' : 'Search'}
+                </Button>
                 <Button
-                  type="submit"
+                  type="button"
+                  variant="secondary"
                   isLoading={loading}
-                  className="whitespace-nowrap"
+                  onClick={() => void handleVerify()}
                 >
-                  {loading ? 'Verifying...' : 'Verify'}
+                  Verify by ID
                 </Button>
                 <Button
                   type="button"
@@ -206,14 +287,65 @@ const VerifyProduct: React.FC = () => {
             </div>
           </form>
 
+          {searchResults && searchResults.length > 0 && (
+            <div className="mt-6 border-t border-neutral-200 dark:border-neutral-600 pt-6">
+              <h3 className="text-sm font-semibold text-page-title mb-3">
+                Search results ({searchResults.length})
+              </h3>
+              <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-600">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-neutral-50 dark:bg-neutral-900/50">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-medium">Product ID</th>
+                      <th className="text-left px-3 py-2 font-medium">Name</th>
+                      <th className="text-left px-3 py-2 font-medium">Manufacturer</th>
+                      <th className="text-left px-3 py-2 font-medium">Batch</th>
+                      <th className="text-left px-3 py-2 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
+                    {searchResults.map((row) => (
+                      <tr key={row.productId} className="hover:bg-neutral-50/60 dark:hover:bg-neutral-900/30">
+                        <td className="px-3 py-2 font-mono text-xs">{row.productId}</td>
+                        <td className="px-3 py-2">{row.name}</td>
+                        <td className="px-3 py-2">{row.manufacturer}</td>
+                        <td className="px-3 py-2">{row.batchNumber}</td>
+                        <td className="px-3 py-2">
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="primary"
+                              onClick={() => void loadProductById(row.productId)}
+                            >
+                              Verify
+                            </Button>
+                            <Button
+                              as={Link}
+                              to={`/qr/${encodeURIComponent(row.productId)}`}
+                              size="sm"
+                              variant="ghost"
+                            >
+                              View QR
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* QR Scanner Section */}
           {showScanner && (
             <div className="mt-8 pt-6 border-t border-neutral-200">
               <div className="mb-6">
-                <h3 className="text-lg font-medium text-neutral-900 mb-2">
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
                   Scan QR Code
                 </h3>
-                <p className="text-neutral-600">
+                <p className="text-neutral-600 dark:text-neutral-200">
                   Use your camera or paste a verification link
                 </p>
               </div>
@@ -274,6 +406,15 @@ const VerifyProduct: React.FC = () => {
         {/* Product Details */}
         {product && (
           <div className="space-y-8">
+            {(product.manufacturerOrganizationVerified ||
+              product.manufacturerVerifiedByRegulator ||
+              product.manufacturerOrganizationFlagged) && (
+              <div className="flex flex-wrap gap-2">
+                {product.manufacturerOrganizationVerified && <VerifiedOrganizationBadge />}
+                {product.manufacturerVerifiedByRegulator && <VerificationBadge verified />}
+                {product.manufacturerOrganizationFlagged && <OrganizationFlaggedBadge />}
+              </div>
+            )}
             {/* Product Card */}
             <ProductCard
               product={{
@@ -281,6 +422,11 @@ const VerifyProduct: React.FC = () => {
                 name: product.name,
                 description: product.ingredients ?? undefined,
                 manufacturer: product.manufacturer,
+                manufacturerUserId: product.manufacturerUserId,
+                manufacturerDisplayName: getManufacturerDisplayLabel(product),
+                metadataComplete: product.metadataComplete,
+                manufacturerOrganizationVerified: product.manufacturerOrganizationVerified,
+                manufacturerOrganizationFlagged: product.manufacturerOrganizationFlagged,
                 status: product.status,
                 expiryDate: product.expiryDate ?? undefined,
                 imageUrl: product.imageUrl ?? undefined,
@@ -307,32 +453,34 @@ const VerifyProduct: React.FC = () => {
               }
             />
 
+            <PersonalizedAlertsPanel product={product} user={user} />
+
             {/* Detailed Information */}
             <div className="card p-8">
-              <h3 className="text-lg font-semibold text-neutral-900 mb-6">
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
                 Product Details
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-neutral-500">
+                    <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                       Product ID
                     </label>
-                    <p className="font-mono text-neutral-900">
+                    <p className="font-mono text-neutral-900 dark:text-neutral-100">
                       {product.productId}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-neutral-500">
+                    <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                       Batch Number
                     </label>
-                    <p className="font-mono text-neutral-900">
+                    <p className="font-mono text-neutral-900 dark:text-neutral-100">
                       {product.batchNumber}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-neutral-500">
+                    <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                       Status
                     </label>
                     <div className="mt-1">
@@ -343,22 +491,40 @@ const VerifyProduct: React.FC = () => {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-neutral-500">
+                    <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                       Current Owner
                     </label>
-                    <p className="text-neutral-900">{product.owner}</p>
+                    <p className="text-neutral-900 dark:text-neutral-100">
+                      {product.currentOwnerName || product.owner}
+                    </p>
+                    {product.currentOwnerRole && (
+                      <p className="text-xs text-neutral-500 dark:text-neutral-300 capitalize">
+                        {product.currentOwnerRole}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-neutral-500">
+                    <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
+                      Manufacturer
+                    </label>
+                    <p className="text-neutral-900 dark:text-neutral-100">
+                      <OrganizationLink
+                        userId={product.manufacturerUserId}
+                        name={getManufacturerDisplayLabel(product)}
+                      />
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                       Location
                     </label>
-                    <p className="text-neutral-900">{product.location}</p>
+                    <p className="text-neutral-900 dark:text-neutral-100">{product.location}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-neutral-500">
+                    <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                       Last Updated
                     </label>
-                    <p className="text-neutral-900">
+                    <p className="text-neutral-900 dark:text-neutral-100">
                       {new Date(product.timestamp).toLocaleString()}
                     </p>
                   </div>
@@ -366,24 +532,24 @@ const VerifyProduct: React.FC = () => {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-neutral-500">
+                    <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                       Halal Status
                     </label>
-                    <p className="text-neutral-900">
+                    <p className="text-neutral-900 dark:text-neutral-100">
                       {product.halalStatus || 'N/A'}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-neutral-500">
+                    <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                       Expiry Date
                     </label>
-                    <p className="text-neutral-900">
+                    <p className="text-neutral-900 dark:text-neutral-100">
                       {product.expiryDate || 'N/A'}
                     </p>
                   </div>
                   {expiryReminder && (
                     <div>
-                      <label className="text-sm font-medium text-neutral-500">
+                      <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                         Expiry Status
                       </label>
                       <div className="mt-1">
@@ -398,10 +564,10 @@ const VerifyProduct: React.FC = () => {
               <div className="mt-8 space-y-6">
                 {product.ingredients && (
                   <div>
-                    <label className="text-sm font-medium text-neutral-500">
+                    <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                       Ingredients
                     </label>
-                    <p className="text-neutral-900 mt-1">
+                    <p className="text-neutral-900 dark:text-neutral-100 mt-1">
                       {product.ingredients}
                     </p>
                   </div>
@@ -409,10 +575,10 @@ const VerifyProduct: React.FC = () => {
 
                 {product.allergyInfo && (
                   <div>
-                    <label className="text-sm font-medium text-neutral-500">
+                    <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                       Allergy Information
                     </label>
-                    <p className="text-neutral-900 mt-1">
+                    <p className="text-neutral-900 dark:text-neutral-100 mt-1">
                       {product.allergyInfo}
                     </p>
                   </div>
@@ -420,10 +586,10 @@ const VerifyProduct: React.FC = () => {
 
                 {product.usageInstructions && (
                   <div>
-                    <label className="text-sm font-medium text-neutral-500">
+                    <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                       Usage Instructions
                     </label>
-                    <p className="text-neutral-900 mt-1">
+                    <p className="text-neutral-900 dark:text-neutral-100 mt-1">
                       {product.usageInstructions}
                     </p>
                   </div>
@@ -434,7 +600,7 @@ const VerifyProduct: React.FC = () => {
             {/* Product History */}
             {history && history.length > 0 && (
               <div className="card p-8">
-                <h3 className="text-lg font-semibold text-neutral-900 mb-6">
+                <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
                   Supply Chain History
                 </h3>
                 <ProductTimeline

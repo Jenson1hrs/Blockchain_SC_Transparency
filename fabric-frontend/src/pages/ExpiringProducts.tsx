@@ -47,10 +47,10 @@ const ExpiringProducts = () => {
         <div className="card p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-900">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                 Expiry Alerts
               </h2>
-              <p className="text-sm text-neutral-600 mt-1">
+              <p className="text-sm text-neutral-600 dark:text-neutral-200 mt-1">
                 Monitor products approaching their expiry dates
               </p>
             </div>
@@ -60,7 +60,7 @@ const ExpiringProducts = () => {
                   <div className="text-2xl font-bold text-danger-600">
                     {expiredCount}
                   </div>
-                  <div className="text-neutral-500">Expired</div>
+                  <div className="text-neutral-500 dark:text-neutral-300">Expired</div>
                 </div>
               )}
               {urgentCount > 0 && (
@@ -68,7 +68,7 @@ const ExpiringProducts = () => {
                   <div className="text-2xl font-bold text-warning-600">
                     {urgentCount}
                   </div>
-                  <div className="text-neutral-500">Urgent</div>
+                  <div className="text-neutral-500 dark:text-neutral-300">Urgent</div>
                 </div>
               )}
               {warningCount > 0 && (
@@ -76,7 +76,7 @@ const ExpiringProducts = () => {
                   <div className="text-2xl font-bold text-warning-600">
                     {warningCount}
                   </div>
-                  <div className="text-neutral-500">Warning</div>
+                  <div className="text-neutral-500 dark:text-neutral-300">Warning</div>
                 </div>
               )}
             </div>
@@ -86,7 +86,7 @@ const ExpiringProducts = () => {
         {/* Loading State */}
         {loading && (
           <div className="card p-12 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-100 text-primary-600 rounded-full mb-4">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300 rounded-full mb-4">
               <svg
                 className="animate-spin w-6 h-6"
                 fill="none"
@@ -107,10 +107,10 @@ const ExpiringProducts = () => {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
               Loading Products
             </h3>
-            <p className="text-neutral-600">
+            <p className="text-neutral-600 dark:text-neutral-200">
               Checking for expiring products...
             </p>
           </div>
@@ -122,7 +122,7 @@ const ExpiringProducts = () => {
         {/* Empty State */}
         {!loading && !error && items.length === 0 && (
           <div className="card p-12 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-success-100 text-success-600 rounded-full mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-success-100 dark:bg-success-900/35 text-success-600 dark:text-success-300 rounded-full mb-6">
               <svg
                 className="w-8 h-8"
                 fill="none"
@@ -137,10 +137,10 @@ const ExpiringProducts = () => {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-neutral-900 mb-2">
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
               All Good!
             </h3>
-            <p className="text-neutral-600 mb-8 max-w-md mx-auto">
+            <p className="text-neutral-600 dark:text-neutral-200 mb-8 max-w-md mx-auto">
               No products are expiring within the next 7 days. All your tracked
               products are safe.
             </p>

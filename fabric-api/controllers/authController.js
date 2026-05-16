@@ -52,23 +52,26 @@ exports.register = async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(String(password), BCRYPT_ROUNDS);
-    const row = await userService.createUser({
+    const isConsumer = role === 'consumer';
+    await userService.createUser({
       name: String(name).trim(),
       email: String(email).trim(),
       passwordHash,
       role,
-      allergies: allergies != null ? String(allergies) : null,
-      dietaryPreference: dietaryPreference != null ? String(dietaryPreference) : null,
+      allergies:
+        isConsumer && allergies != null && String(allergies).trim() !== ''
+          ? String(allergies).trim()
+          : null,
+      dietaryPreference:
+        isConsumer && dietaryPreference != null && String(dietaryPreference).trim() !== ''
+          ? String(dietaryPreference).trim()
+          : null,
       preferredLanguage: preferredLanguage != null ? String(preferredLanguage) : 'en',
     });
 
-    const user = userService.rowToPublicUser(row);
-    const token = signToken(row);
-
     return res.status(201).json({
       success: true,
-      token,
-      user,
+      message: 'Account created. Please sign in.',
     });
   } catch (e) {
     console.error('register error', e);
@@ -142,18 +145,55 @@ exports.updateMe = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const { name, allergies, dietaryPreference, preferredLanguage } = req.body || {};
+    const {
+      name,
+      allergies,
+      dietaryPreference,
+      preferredLanguage,
+      themePreference,
+      companyName,
+      companyDescription,
+      companyWebsite,
+      companyLogoUrl,
+      companyLocation,
+    } = req.body || {};
     const nextName = name != null ? String(name).trim() : current.name;
     if (!nextName) {
       return res.status(400).json({ success: false, message: 'Name is required' });
     }
 
+    const nextTheme =
+      themePreference === 'light' || themePreference === 'dark' ? themePreference : undefined;
+
+    const isConsumer = current.role === 'consumer';
+    const isSupplyChain = userService.SUPPLY_CHAIN_ROLES.includes(current.role);
     const updated = await userService.updateUserProfile(id, {
       name: nextName,
-      allergies: allergies != null ? String(allergies) : null,
-      dietaryPreference: dietaryPreference != null ? String(dietaryPreference) : null,
+      role: current.role,
+      allergies: isConsumer
+        ? allergies != null
+          ? String(allergies).trim() || null
+          : null
+        : null,
+      dietaryPreference: isConsumer
+        ? dietaryPreference != null
+          ? String(dietaryPreference).trim() || null
+          : null
+        : null,
       preferredLanguage:
         preferredLanguage != null ? String(preferredLanguage).trim() || 'en' : current.preferred_language,
+      themePreference: nextTheme,
+      companyName: isSupplyChain && companyName != null ? String(companyName).trim() || null : undefined,
+      companyDescription:
+        isSupplyChain && companyDescription != null
+          ? String(companyDescription).trim() || null
+          : undefined,
+      companyWebsite:
+        isSupplyChain && companyWebsite != null ? String(companyWebsite).trim() || null : undefined,
+      companyLogoUrl:
+        isSupplyChain && companyLogoUrl != null ? String(companyLogoUrl).trim() || null : undefined,
+      companyLocation:
+        isSupplyChain && companyLocation != null ? String(companyLocation).trim() || null : undefined,
     });
 
     if (!updated) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { getProduct, getProductHistory, verifyQr } from '../api/productService';
+import { getProduct, getProductHistory, verifyQr, getManufacturerDisplayLabel } from '../api/productService';
 import { API_BASE_URL } from '../config';
 import type { Product, ProductHistory } from '../types';
 import { formatHistoryTimestamp } from '../utils/historyTime';
@@ -13,9 +13,15 @@ import {
   ProductTimeline,
   ProductStatusBadge,
   ExpiryBadge,
+  PersonalizedAlertsPanel,
 } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { addToUserInventory } from '../api/inventoryService';
+import {
+  VerifiedOrganizationBadge,
+  VerificationBadge,
+  OrganizationFlaggedBadge,
+} from '../components/VerificationBadge';
 
 type VerifyState =
   | { kind: 'loading' }
@@ -152,10 +158,10 @@ const QRVerifyPage = () => {
               />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-neutral-900 mb-2">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
             Verifying Product
           </h2>
-          <p className="text-neutral-600">
+          <p className="text-neutral-600 dark:text-neutral-200">
             Checking blockchain authenticity...
           </p>
         </div>
@@ -183,10 +189,10 @@ const QRVerifyPage = () => {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-neutral-900 mb-4">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
               Verification Failed
             </h1>
-            <p className="text-neutral-600 mb-8">
+            <p className="text-neutral-600 dark:text-neutral-200 mb-8">
               {state.message ||
                 'QR verification failed. The QR code may have been tampered with.'}
             </p>
@@ -209,7 +215,7 @@ const QRVerifyPage = () => {
       <AppShell title="QR Verification" subtitle="Product not found">
         <div className="max-w-lg mx-auto animate-fade-up">
           <div className="card p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-neutral-100 text-neutral-600 rounded-full mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-200 rounded-full mb-6">
               <svg
                 className="w-8 h-8"
                 fill="none"
@@ -224,10 +230,10 @@ const QRVerifyPage = () => {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-neutral-900 mb-4">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
               Product Not Found
             </h1>
-            <p className="text-neutral-600 mb-8">
+            <p className="text-neutral-600 dark:text-neutral-200 mb-8">
               {state.message ||
                 'Product not found. This may be an unregistered or counterfeit item.'}
             </p>
@@ -272,7 +278,7 @@ const QRVerifyPage = () => {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-neutral-900 mb-2">
+              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
                 {looksLikeConnection
                   ? "Can't reach the API"
                   : 'Verification Error'}
@@ -289,19 +295,19 @@ const QRVerifyPage = () => {
             )}
 
             <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-6">
-              <p className="text-sm font-medium text-neutral-700 mb-2">
+              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
                 API Configuration
               </p>
-              <p className="text-xs font-mono text-neutral-600">
+              <p className="text-xs font-mono text-neutral-600 dark:text-neutral-200">
                 Base URL: {API_BASE_URL}
               </p>
             </div>
 
             <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-8">
-              <p className="text-sm font-medium text-neutral-700 mb-2">
+              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
                 Error Details
               </p>
-              <pre className="text-xs text-neutral-800 whitespace-pre-wrap font-mono overflow-x-auto">
+              <pre className="text-xs text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap font-mono overflow-x-auto">
                 {msg}
               </pre>
             </div>
@@ -377,6 +383,16 @@ const QRVerifyPage = () => {
           </Alert>
         )}
 
+        {(product.manufacturerOrganizationVerified ||
+          product.manufacturerVerifiedByRegulator ||
+          product.manufacturerOrganizationFlagged) && (
+          <div className="flex flex-wrap gap-2">
+            {product.manufacturerOrganizationFlagged && <OrganizationFlaggedBadge />}
+            {product.manufacturerOrganizationVerified && <VerifiedOrganizationBadge />}
+            {product.manufacturerVerifiedByRegulator && <VerificationBadge verified />}
+          </div>
+        )}
+
         {/* Product Card */}
         <ProductCard
           product={{
@@ -384,6 +400,11 @@ const QRVerifyPage = () => {
             name: product.name,
             description: product.ingredients ?? undefined,
             manufacturer: product.manufacturer,
+            manufacturerUserId: product.manufacturerUserId,
+            manufacturerDisplayName: getManufacturerDisplayLabel(product),
+            metadataComplete: product.metadataComplete,
+            manufacturerOrganizationVerified: product.manufacturerOrganizationVerified,
+            manufacturerOrganizationFlagged: product.manufacturerOrganizationFlagged,
             status: product.status,
             expiryDate: product.expiryDate ?? undefined,
             imageUrl: product.imageUrl ?? undefined,
@@ -401,6 +422,8 @@ const QRVerifyPage = () => {
             </div>
           }
         />
+
+        <PersonalizedAlertsPanel product={product} user={user} />
 
         {inventoryErr && (
           <Alert type="error">
@@ -423,30 +446,30 @@ const QRVerifyPage = () => {
 
         {/* Detailed Information */}
         <div className="card p-8">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-6">
+          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
             Product Details
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-neutral-500">
+                <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                   Product ID
                 </label>
-                <p className="font-mono text-neutral-900">
+                <p className="font-mono text-neutral-900 dark:text-neutral-100">
                   {product.productId}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-neutral-500">
+                <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                   Batch Number
                 </label>
-                <p className="font-mono text-neutral-900">
+                <p className="font-mono text-neutral-900 dark:text-neutral-100">
                   {product.batchNumber}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-neutral-500">
+                <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                   Status
                 </label>
                 <div className="mt-1">
@@ -457,22 +480,29 @@ const QRVerifyPage = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-neutral-500">
+                <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                   Current Owner
                 </label>
-                <p className="text-neutral-900">{product.owner}</p>
+                <p className="text-neutral-900 dark:text-neutral-100">
+                  {product.currentOwnerName || product.owner}
+                </p>
+                {product.currentOwnerRole && (
+                  <p className="text-xs text-neutral-500 dark:text-neutral-300 capitalize">
+                    {product.currentOwnerRole}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="text-sm font-medium text-neutral-500">
+                <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                   Location
                 </label>
-                <p className="text-neutral-900">{product.location}</p>
+                <p className="text-neutral-900 dark:text-neutral-100">{product.location}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-neutral-500">
+                <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                   Last Updated
                 </label>
-                <p className="text-neutral-900">
+                <p className="text-neutral-900 dark:text-neutral-100">
                   {new Date(product.timestamp).toLocaleString()}
                 </p>
               </div>
@@ -480,24 +510,24 @@ const QRVerifyPage = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-neutral-500">
+                <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                   Halal Status
                 </label>
-                <p className="text-neutral-900">
+                <p className="text-neutral-900 dark:text-neutral-100">
                   {product.halalStatus || 'N/A'}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-neutral-500">
+                <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                   Expiry Date
                 </label>
-                <p className="text-neutral-900">
+                <p className="text-neutral-900 dark:text-neutral-100">
                   {product.expiryDate || 'N/A'}
                 </p>
               </div>
               {expiryReminder && (
                 <div>
-                  <label className="text-sm font-medium text-neutral-500">
+                  <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                     Expiry Status
                   </label>
                   <div className="mt-1">
@@ -512,28 +542,28 @@ const QRVerifyPage = () => {
           <div className="mt-8 space-y-6">
             {product.ingredients && (
               <div>
-                <label className="text-sm font-medium text-neutral-500">
+                <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                   Ingredients
                 </label>
-                <p className="text-neutral-900 mt-1">{product.ingredients}</p>
+                <p className="text-neutral-900 dark:text-neutral-100 mt-1">{product.ingredients}</p>
               </div>
             )}
 
             {product.allergyInfo && (
               <div>
-                <label className="text-sm font-medium text-neutral-500">
+                <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                   Allergy Information
                 </label>
-                <p className="text-neutral-900 mt-1">{product.allergyInfo}</p>
+                <p className="text-neutral-900 dark:text-neutral-100 mt-1">{product.allergyInfo}</p>
               </div>
             )}
 
             {product.usageInstructions && (
               <div>
-                <label className="text-sm font-medium text-neutral-500">
+                <label className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                   Usage Instructions
                 </label>
-                <p className="text-neutral-900 mt-1">
+                <p className="text-neutral-900 dark:text-neutral-100 mt-1">
                   {product.usageInstructions}
                 </p>
               </div>
@@ -544,7 +574,7 @@ const QRVerifyPage = () => {
         {/* Product History */}
         {history.length > 0 && (
           <div className="card p-8">
-            <h3 className="text-lg font-semibold text-neutral-900 mb-6">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
               Supply Chain History
             </h3>
             <ProductTimeline

@@ -2,6 +2,51 @@ const connectToNetwork = require('../config/fabric');
 const dbService = require('./dbService');
 const pool = require('../config/db');
 
+async function syncProductToDb(product, data) {
+    await dbService.ensureProductColumns();
+    await pool.query(
+        `INSERT INTO products
+         (product_id, name, manufacturer, batch_number, location, owner, status, timestamp,
+          expiry_date, image_url, ingredients, allergy_info, halal_status, usage_instructions,
+          manufacturer_user_id, manufacturer_company_name)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+         ON CONFLICT (product_id) DO UPDATE SET
+           name = EXCLUDED.name,
+           manufacturer = EXCLUDED.manufacturer,
+           batch_number = EXCLUDED.batch_number,
+           location = EXCLUDED.location,
+           owner = EXCLUDED.owner,
+           status = EXCLUDED.status,
+           timestamp = EXCLUDED.timestamp,
+           expiry_date = COALESCE(EXCLUDED.expiry_date, products.expiry_date),
+           image_url = COALESCE(EXCLUDED.image_url, products.image_url),
+           ingredients = COALESCE(EXCLUDED.ingredients, products.ingredients),
+           allergy_info = COALESCE(EXCLUDED.allergy_info, products.allergy_info),
+           halal_status = COALESCE(EXCLUDED.halal_status, products.halal_status),
+           usage_instructions = COALESCE(EXCLUDED.usage_instructions, products.usage_instructions),
+           manufacturer_user_id = COALESCE(EXCLUDED.manufacturer_user_id, products.manufacturer_user_id),
+           manufacturer_company_name = COALESCE(EXCLUDED.manufacturer_company_name, products.manufacturer_company_name)`,
+        [
+            product.productId,
+            product.name,
+            product.manufacturer,
+            product.batchNumber,
+            product.location,
+            product.owner,
+            product.status,
+            product.timestamp,
+            data.expiryDate || null,
+            data.imageUrl || null,
+            data.ingredients || null,
+            data.allergyInfo || null,
+            data.halalStatus || null,
+            data.usageInstructions || null,
+            data.manufacturerUserId ?? null,
+            data.manufacturerCompanyName ?? product.manufacturer ?? null,
+        ]
+    );
+}
+
 // ===============================
 // VALIDATION FUNCTION
 // ===============================
@@ -87,36 +132,7 @@ async function createProduct(data) {
 
         // 🔴 STEP 5: SYNC TO DATABASE (NOT SOURCE OF TRUTH)
         try {
-            await pool.query(
-                `ALTER TABLE products
-                 ADD COLUMN IF NOT EXISTS expiry_date DATE,
-                 ADD COLUMN IF NOT EXISTS image_url TEXT,
-                 ADD COLUMN IF NOT EXISTS ingredients TEXT,
-                 ADD COLUMN IF NOT EXISTS allergy_info TEXT,
-                 ADD COLUMN IF NOT EXISTS halal_status TEXT,
-                 ADD COLUMN IF NOT EXISTS usage_instructions TEXT`
-            );
-            await pool.query(
-                `INSERT INTO products 
-                (product_id, name, manufacturer, batch_number, location, owner, status, timestamp, expiry_date, image_url, ingredients, allergy_info, halal_status, usage_instructions)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-                [
-                    product.productId,
-                    product.name,
-                    product.manufacturer,
-                    product.batchNumber,
-                    product.location,
-                    product.owner,
-                    product.status,
-                    product.timestamp,
-                    data.expiryDate || null,
-                    data.imageUrl || null,
-                    data.ingredients || null,
-                    data.allergyInfo || null,
-                    data.halalStatus || null,
-                    data.usageInstructions || null
-                ]
-            );
+            await syncProductToDb(product, data);
         } catch (dbError) {
             console.error("⚠️ DB sync failed (non-critical):", dbError.message);
         }
@@ -138,14 +154,31 @@ async function getProduct(id) {
 
     // 🔴 ALWAYS TRY DB FIRST (FAST CACHE)
     const dbProduct = await dbService.getProductFromDB(id);
-    if (dbProduct) return dbProduct;
+    if (dbProduct) return dbService.mapProductToApi(dbProduct);
 
     // 🔴 FALLBACK TO BLOCKCHAIN
     const { gateway, contract } = await connectToNetwork();
 
     try {
         const result = await contract.evaluateTransaction('verifyProduct', id);
-        return JSON.parse(result.toString());
+        const chain = JSON.parse(result.toString());
+        return {
+            productId: chain.productId,
+            name: chain.name,
+            manufacturer: chain.manufacturer,
+            manufacturerUserId: null,
+            manufacturerCompanyName: chain.manufacturer,
+            currentOwnerUserId: null,
+            currentOwnerRole: null,
+            currentOwnerName: chain.owner,
+            batchNumber: chain.batchNumber,
+            location: chain.location,
+            owner: chain.owner,
+            status: chain.status,
+            timestamp: chain.timestamp,
+            metadataComplete: null,
+            metadataCompletionPercent: null,
+        };
     } finally {
         gateway.disconnect();
     }

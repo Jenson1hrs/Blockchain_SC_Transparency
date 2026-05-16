@@ -1,6 +1,8 @@
-const pool = require('../config/db');
-const connectToNetwork = require('../config/fabric');
 const userService = require('../services/userService');
+const {
+  checkDatabaseHealth,
+  checkBlockchainHealth,
+} = require('../services/systemHealthService');
 
 exports.listUsers = async (req, res) => {
   try {
@@ -22,38 +24,8 @@ exports.listUsers = async (req, res) => {
 
 exports.systemStatus = async (req, res) => {
   const timestamp = new Date().toISOString();
-
-  let database = { status: 'error', detail: '' };
-  try {
-    await pool.query('SELECT 1');
-    database = { status: 'connected', detail: 'PostgreSQL reachable' };
-  } catch (e) {
-    database = { status: 'error', detail: e.message || 'Database unreachable' };
-  }
-
-  let blockchain = { status: 'unknown', detail: 'Not checked' };
-  let gateway;
-  try {
-    const conn = await connectToNetwork();
-    gateway = conn.gateway;
-    blockchain = {
-      status: 'connected',
-      detail: 'Hyperledger Fabric gateway connected (supplychannel / anticounterfeit)',
-    };
-  } catch (e) {
-    blockchain = {
-      status: 'error',
-      detail: e.message || 'Fabric connection failed',
-    };
-  } finally {
-    if (gateway) {
-      try {
-        gateway.disconnect();
-      } catch (_) {
-        /* ignore */
-      }
-    }
-  }
+  const database = await checkDatabaseHealth();
+  const blockchain = await checkBlockchainHealth();
 
   return res.json({
     success: true,
