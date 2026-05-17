@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../components/AppShell';
-import { Alert, Button } from '../components';
+import { useRolePageMeta } from '../hooks/useRolePageMeta';
+import { Alert, Button, ConfirmModal, Toast } from '../components';
 import {
   VerifiedOrganizationBadge,
   OrganizationFlaggedBadge,
@@ -26,13 +27,16 @@ function OrgStatusBadges({ row }: { row: RegulatorOrganizationRow }) {
 }
 
 export default function OrganizationManagement() {
+  const pageMeta = useRolePageMeta('regulatorOrgs', 'regulator');
   const [rows, setRows] = useState<RegulatorOrganizationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [approveTarget, setApproveTarget] = useState<RegulatorOrganizationRow | null>(null);
   const [flagTarget, setFlagTarget] = useState<RegulatorOrganizationRow | null>(null);
   const [flagReason, setFlagReason] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,69 +54,131 @@ export default function OrganizationManagement() {
     void load();
   }, [load]);
 
-  const toggleVerification = async (row: RegulatorOrganizationRow, verified: boolean) => {
-    setBusyId(row.id);
-    setMessage(null);
+  const displayName = (r: RegulatorOrganizationRow) => r.companyName?.trim() || r.name;
+
+  const closeModals = () => {
+    if (busy) return;
+    setApproveTarget(null);
+    setFlagTarget(null);
+    setFlagReason('');
+  };
+
+  const confirmApprove = async () => {
+    if (!approveTarget) return;
+    setBusy(true);
     setError(null);
+    setMessage(null);
     try {
-      const updated = await setOrganizationVerification(row.id, verified);
+      const updated = await setOrganizationVerification(approveTarget.id, true);
       setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-      setMessage(verified ? `Approved ${displayName(row)}` : `Revoked approval for ${displayName(row)}`);
+      setApproveTarget(null);
+      setToast({
+        message: `${displayName(approveTarget)} is now verified. Trust badges will appear on verification pages.`,
+        type: 'success',
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Update failed');
+      setApproveTarget(null);
     } finally {
-      setBusyId(null);
+      setBusy(false);
     }
   };
 
-  const submitFlag = async (flagged: boolean) => {
+  const confirmFlag = async () => {
     if (!flagTarget) return;
-    setBusyId(flagTarget.id);
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const updated = await setOrganizationFlag(flagTarget.id, true, flagReason.trim() || undefined);
+      setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+      setFlagTarget(null);
+      setFlagReason('');
+      setToast({
+        message: `Flagged ${displayName(flagTarget)} for review.`,
+        type: 'success',
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Flag update failed');
+      setFlagTarget(null);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const revokeVerification = async (row: RegulatorOrganizationRow) => {
+    setBusy(true);
     setMessage(null);
     setError(null);
     try {
-      const updated = await setOrganizationFlag(
-        flagTarget.id,
-        flagged,
-        flagged ? flagReason : undefined
-      );
+      const updated = await setOrganizationVerification(row.id, false);
       setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-      setMessage(
-        flagged
-          ? `Flagged ${displayName(flagTarget)} for review`
-          : `Removed flag from ${displayName(flagTarget)}`
-      );
-      setFlagTarget(null);
-      setFlagReason('');
+      setMessage(`Revoked approval for ${displayName(row)}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Flag update failed');
+      setError(e instanceof Error ? e.message : 'Update failed');
     } finally {
-      setBusyId(null);
+      setBusy(false);
     }
   };
 
   const unflagOrganization = async (row: RegulatorOrganizationRow) => {
-    setBusyId(row.id);
+    setBusy(true);
     setMessage(null);
     setError(null);
     try {
       const updated = await setOrganizationFlag(row.id, false);
       setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-      setMessage(`Removed flag from ${displayName(row)}`);
+      setToast({ message: `Removed flag from ${displayName(row)}`, type: 'success' });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unflag failed');
     } finally {
-      setBusyId(null);
+      setBusy(false);
     }
   };
 
-  const displayName = (r: RegulatorOrganizationRow) => r.companyName?.trim() || r.name;
-
   return (
-    <AppShell
-      title="Organization review"
-      subtitle="Approve, revoke, or flag supply-chain organizations"
-    >
+    <AppShell title={pageMeta.title} subtitle={pageMeta.subtitle}>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      <ConfirmModal
+        isOpen={approveTarget !== null}
+        variant="success"
+        title="Approve organization?"
+        description="Verified organizations display a trust badge on product verification and organization profiles. This signals regulatory approval to consumers and partners."
+        confirmText="Approve"
+        cancelText="Cancel"
+        loading={busy}
+        onConfirm={() => void confirmApprove()}
+        onCancel={closeModals}
+      >
+        {approveTarget && (
+          <p className="text-sm font-medium text-page-title">{displayName(approveTarget)}</p>
+        )}
+      </ConfirmModal>
+
+      <ConfirmModal
+        isOpen={flagTarget !== null}
+        variant="danger"
+        title="Flag organization for review?"
+        description="Flagged organizations may display warning badges during product verification. Use this when compliance or documentation concerns require attention."
+        confirmText="Flag organization"
+        cancelText="Cancel"
+        loading={busy}
+        onConfirm={() => void confirmFlag()}
+        onCancel={closeModals}
+      >
+        <label className="block text-sm font-medium text-page-label">
+          Reason (optional)
+          <textarea
+            value={flagReason}
+            onChange={(e) => setFlagReason(e.target.value)}
+            rows={3}
+            placeholder="e.g. Missing certification documents"
+            className="mt-1.5 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-600 dark:bg-neutral-800"
+          />
+        </label>
+      </ConfirmModal>
+
       <div className="space-y-6 animate-fade-up">
         <div className="rounded-xl border border-sky-200/80 bg-gradient-to-r from-sky-50/90 to-slate-50/50 px-5 py-4 dark:border-sky-800/50 dark:from-sky-950/30 dark:to-neutral-900/40">
           <p className="text-sm text-page-body">
@@ -132,37 +198,6 @@ export default function OrganizationManagement() {
 
         {error && <Alert type="error">{error}</Alert>}
         {message && <Alert type="success">{message}</Alert>}
-
-        {flagTarget && (
-          <div className="card p-5 border border-red-200/80 dark:border-red-900/50 space-y-3">
-            <h3 className="font-semibold text-page-title">
-              Flag {displayName(flagTarget)} for review
-            </h3>
-            <label className="block text-sm text-page-label">
-              Reason (optional)
-              <textarea
-                value={flagReason}
-                onChange={(e) => setFlagReason(e.target.value)}
-                rows={3}
-                className="mt-1 w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 text-sm dark:bg-neutral-800"
-                placeholder="e.g. Missing certification documents"
-              />
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="primary"
-                loading={busyId === flagTarget.id}
-                onClick={() => void submitFlag(true)}
-              >
-                Confirm flag
-              </Button>
-              <Button type="button" variant="ghost" onClick={() => setFlagTarget(null)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
 
         <section className="card overflow-hidden p-0">
           <div className="overflow-x-auto">
@@ -215,8 +250,8 @@ export default function OrganizationManagement() {
                             type="button"
                             variant="primary"
                             size="sm"
-                            loading={busyId === row.id}
-                            onClick={() => void toggleVerification(row, true)}
+                            disabled={busy}
+                            onClick={() => setApproveTarget(row)}
                           >
                             Approve
                           </Button>
@@ -225,8 +260,8 @@ export default function OrganizationManagement() {
                             type="button"
                             variant="secondary"
                             size="sm"
-                            loading={busyId === row.id}
-                            onClick={() => void toggleVerification(row, false)}
+                            loading={busy}
+                            onClick={() => void revokeVerification(row)}
                           >
                             Revoke
                           </Button>
@@ -236,7 +271,7 @@ export default function OrganizationManagement() {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            loading={busyId === row.id}
+                            loading={busy}
                             onClick={() => void unflagOrganization(row)}
                           >
                             Unflag
@@ -246,6 +281,7 @@ export default function OrganizationManagement() {
                             type="button"
                             variant="ghost"
                             size="sm"
+                            disabled={busy}
                             onClick={() => {
                               setFlagTarget(row);
                               setFlagReason('');

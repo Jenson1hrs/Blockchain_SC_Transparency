@@ -1,21 +1,30 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
   getProductHistory,
   updateLocation,
 } from '../api/productService';
-import type { Product, ProductHistory } from '../types';
-import { formatHistoryTimestamp } from '../utils/historyTime';
+import type { Product, ProductTimelineEntry } from '../types';
 import AppShell from '../components/AppShell';
+import { useRolePageMeta } from '../hooks/useRolePageMeta';
+import { ProductTimeline } from '../components/ProductTimeline';
 
 const UpdateLocation = () => {
-  const [productId, setProductId] = useState('');
+  const pageMeta = useRolePageMeta('location', 'distributor');
+  const routeState = useLocation().state as { productId?: string } | null;
+  const [productId, setProductId] = useState(routeState?.productId ?? '');
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
-  const [history, setHistory] = useState<ProductHistory[]>([]);
+  const [history, setHistory] = useState<ProductTimelineEntry[]>([]);
+
+  useEffect(() => {
+    if (routeState?.productId) {
+      setProductId(routeState.productId);
+    }
+  }, [routeState?.productId]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +53,7 @@ const UpdateLocation = () => {
   };
 
   return (
-    <AppShell title="Update Location" subtitle="Track movement by recording latest product location.">
+    <AppShell title={pageMeta.title} subtitle={pageMeta.subtitle}>
       <div className="max-w-3xl mx-auto">
 
         <form
@@ -133,19 +142,7 @@ const UpdateLocation = () => {
             <div className="bg-gray-100 p-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold">Product journey</h3>
             </div>
-            <div className="divide-y divide-gray-200">
-              {history.map((entry, index) => (
-                <div key={`${entry.txId}-${index}`} className="p-4 hover:bg-gray-50">
-                  <div className="flex justify-between gap-4">
-                    <span className="text-sm font-medium">{entry.data.status}</span>
-                    <span className="text-xs text-gray-500 dark:text-neutral-200">{formatHistoryTimestamp(entry)}</span>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-neutral-200 mt-1">
-                    Owner: {entry.data.owner} | Location: {entry.data.location}
-                  </p>
-                </div>
-              ))}
-            </div>
+            <ProductTimeline history={history} className="p-4" />
           </div>
         )}
       </div>

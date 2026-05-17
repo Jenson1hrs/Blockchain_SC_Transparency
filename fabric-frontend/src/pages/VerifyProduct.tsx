@@ -8,9 +8,10 @@ import {
   searchProducts,
   type ProductSearchResult,
 } from '../api/productService';
-import type { Product, ProductHistory } from '../types';
+import type { Product, ProductTimelineEntry } from '../types';
 import QRScanner from '../components/QRScanner';
 import AppShell from '../components/AppShell';
+import { useRolePageMeta } from '../hooks/useRolePageMeta';
 import {
   Button,
   Alert,
@@ -21,7 +22,6 @@ import {
   ProductTimeline,
   PersonalizedAlertsPanel,
 } from '../components';
-import { formatHistoryTimestamp } from '../utils/historyTime';
 import { parseQrPayload } from '../utils/parseQrPayload';
 import { getExpiryReminder } from '../utils/expiryReminder';
 import { useAuth } from '../context/AuthContext';
@@ -35,12 +35,13 @@ import { OrganizationLink } from '../components/OrganizationLink';
 
 const VerifyProduct: React.FC = () => {
   const { user } = useAuth();
+  const pageMeta = useRolePageMeta('verify');
   const location = useLocation();
   const [query, setQuery] = useState('');
   const [productId, setProductId] = useState('');
   const [searchResults, setSearchResults] = useState<ProductSearchResult[] | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
-  const [history, setHistory] = useState<ProductHistory[] | null>(null);
+  const [history, setHistory] = useState<ProductTimelineEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
@@ -181,6 +182,9 @@ const VerifyProduct: React.FC = () => {
       setError('Sign in to save products to your inventory. Use Login in the navigation.');
       return;
     }
+    if (user.role !== 'consumer') {
+      return;
+    }
     try {
       const { added } = await addToUserInventory(id);
       setInventoryMsg(added ? 'Added to My Inventory' : 'Already in My Inventory');
@@ -191,10 +195,7 @@ const VerifyProduct: React.FC = () => {
   };
 
   return (
-    <AppShell
-      title="Product Verification"
-      subtitle="Verify product authenticity, scan QR codes, and view blockchain history"
-    >
+    <AppShell title={pageMeta.title} subtitle={pageMeta.subtitle}>
       <div className="space-y-8 animate-fade-up">
         {/* Verification Form */}
         <div className="card p-8">
@@ -270,20 +271,22 @@ const VerifyProduct: React.FC = () => {
               >
                 View QR Code
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const id = productId.trim() || product?.productId || '';
-                  if (!id) {
-                    setError('Enter Product ID first to add to inventory');
-                    return;
-                  }
-                  void handleAddToInventory(id);
-                }}
-              >
-                Add to Inventory
-              </Button>
+              {user?.role === 'consumer' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const id = productId.trim() || product?.productId || '';
+                    if (!id) {
+                      setError('Enter Product ID first to add to inventory');
+                      return;
+                    }
+                    void handleAddToInventory(id);
+                  }}
+                >
+                  Add to Inventory
+                </Button>
+              )}
             </div>
           </form>
 
@@ -358,7 +361,7 @@ const VerifyProduct: React.FC = () => {
                       type="url"
                       value={pastedQrUrl}
                       onChange={(e) => setPastedQrUrl(e.target.value)}
-                      placeholder="http://192.168.x.x:5173/verify/...?"
+                      placeholder="Full verification URL from QR (host from API FRONTEND_URL)"
                       helperText="From any QR scanner app"
                     />
                   </div>
@@ -433,23 +436,27 @@ const VerifyProduct: React.FC = () => {
               }}
               expiryReminder={expiryReminder || undefined}
               actions={
-                <div className="flex gap-2">
+                <>
                   <Button
                     as={Link}
                     to={`/qr/${encodeURIComponent(product.productId)}`}
                     variant="secondary"
                     size="sm"
+                    className="w-full sm:w-auto"
                   >
                     View QR
                   </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void handleAddToInventory(product.productId)}
-                  >
-                    Save
-                  </Button>
-                </div>
+                  {user?.role === 'consumer' && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full sm:w-auto"
+                      onClick={() => void handleAddToInventory(product.productId)}
+                    >
+                      Add to Inventory
+                    </Button>
+                  )}
+                </>
               }
             />
 
@@ -603,15 +610,7 @@ const VerifyProduct: React.FC = () => {
                 <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
                   Supply Chain History
                 </h3>
-                <ProductTimeline
-                  history={history.map((entry) => ({
-                    timestamp: formatHistoryTimestamp(entry),
-                    status: entry.data.status,
-                    location: entry.data.location,
-                    notes: `Transaction: ${entry.txId.slice(0, 16)}...`,
-                    actor: entry.data.owner,
-                  }))}
-                />
+                <ProductTimeline history={history} />
               </div>
             )}
           </div>

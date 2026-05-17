@@ -14,6 +14,11 @@ import type {
   UserRole,
 } from '../types';
 import type { DashboardSummaryPayload } from '../api/dashboardService';
+import {
+  ManufacturerSupplyChainAnalytics,
+  DistributorSupplyChainAnalytics,
+  RetailerSupplyChainAnalytics,
+} from './DashboardSupplyChainAnalytics';
 
 const ROLE_ORDER: UserRole[] = [
   'admin',
@@ -201,45 +206,6 @@ function IconLink() {
   );
 }
 
-function IconTruck() {
-  return (
-    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 17a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4v11h9zM13 16h4l4-4V6h-4"
-      />
-    </svg>
-  );
-}
-
-function IconMap() {
-  return (
-    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-      />
-    </svg>
-  );
-}
-
-function IconStore() {
-  return (
-    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-      />
-    </svg>
-  );
-}
-
 function IconClock() {
   return (
     <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -381,274 +347,42 @@ function AdminAnalytics({ data }: { data: AdminDashboardSummary }) {
 }
 
 function ManufacturerAnalytics({ data }: { data: ManufacturerDashboardSummary }) {
-  const entries = Object.entries(data.productsByStatus).sort((a, b) => b[1] - a[1]);
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-      <AnalyticsCard
-        title="Total Products"
-        description="Products registered under your manufacturer account."
-        tone="primary"
-        icon={<IconBox />}
-      >
-        <BigNumber>{data.totalProducts}</BigNumber>
-      </AnalyticsCard>
-
-      <AnalyticsCard
-        title="Metadata Completion"
-        description="Average completeness across image, ingredients, allergy, usage, and halal fields."
-        tone="success"
-        icon={<IconLayers />}
-      >
-        <BigNumber>{data.metadataCompletionPercent ?? 100}%</BigNumber>
-      </AnalyticsCard>
-
-      <AnalyticsCard
-        title="Products by Status"
-        description="Lifecycle breakdown from chain + DB cache."
-        tone="neutral"
-        icon={<IconLayers />}
-        className="md:col-span-2 xl:col-span-2"
-      >
-        {entries.length === 0 ? (
-          <p className="text-sm text-page-muted">No status breakdown yet.</p>
-        ) : (
-          <ul className="flex flex-wrap gap-2">
-            {entries.map(([status, count]) => (
-              <li
-                key={status}
-                className="inline-flex items-center gap-2 rounded-lg border border-neutral-200/90 bg-neutral-50/90 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-900/40"
-              >
-                <span className="font-medium text-page-title">{status}</span>
-                <span className="tabular-nums text-page-muted">{count}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </AnalyticsCard>
-
-      <AnalyticsCard
-        title="Incomplete Metadata"
-        description="Products missing one or more required metadata fields."
-        tone="warning"
-        icon={<IconLayers />}
-      >
-        <BigNumber>{data.missingMetadataCount}</BigNumber>
-      </AnalyticsCard>
-
-      {(data.recentIncompleteProducts?.length ?? 0) > 0 && (
-        <AnalyticsCard
-          title="Needs metadata"
-          description="Recently registered products with incomplete metadata."
-          tone="warning"
-          icon={<IconRefresh />}
-          className="md:col-span-2 xl:col-span-3"
-        >
-          <ul className="space-y-2 max-h-40 overflow-y-auto pr-1">
-            {data.recentIncompleteProducts!.slice(0, 6).map((p) => (
-              <li
-                key={p.productId}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200/70 bg-amber-50/40 px-3 py-2 text-sm dark:border-amber-800/50 dark:bg-amber-950/20"
-              >
-                <span className="font-medium text-page-title truncate max-w-[14rem]">
-                  {p.name || p.productId}
-                </span>
-                <span className="text-xs text-page-muted tabular-nums">
-                  {p.metadataCompletionPercent ?? 0}% complete
-                </span>
-              </li>
-            ))}
-          </ul>
-        </AnalyticsCard>
-      )}
-
-      <AnalyticsCard
-        title="Recent Products"
-        description="Latest updates by timestamp."
-        tone="success"
-        icon={<IconRefresh />}
-        className="md:col-span-2 xl:col-span-3"
-      >
-        {data.recentProducts.length === 0 ? (
-          <p className="text-sm text-page-muted">No products yet — create one to get started.</p>
-        ) : (
-          <ul className="space-y-2 max-h-52 overflow-y-auto pr-1">
-            {data.recentProducts.slice(0, 8).map((p) => (
-              <li
-                key={p.productId}
-                className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-neutral-200/70 bg-neutral-50/50 px-3 py-2 text-sm dark:border-neutral-600 dark:bg-neutral-900/30"
-              >
-                <span className="font-medium text-page-title truncate max-w-[14rem]">
-                  {p.name || p.productId}
-                </span>
-                <span className="text-page-muted text-xs shrink-0">{p.status ?? '—'}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </AnalyticsCard>
-    </div>
-  );
+  return <ManufacturerSupplyChainAnalytics data={data} />;
 }
 
-function DistributorAnalytics({ data }: { data: DistributorDashboardSummary }) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-      <AnalyticsCard
-        title="In Transit Products"
-        description="Shipments marked in transit in PostgreSQL."
-        tone="warning"
-        icon={<IconTruck />}
-      >
-        <BigNumber>{data.inTransitProductsCount}</BigNumber>
-      </AnalyticsCard>
-
-      <AnalyticsCard
-        title="Recent Transfers / Updates"
-        description="Latest product timestamps across the network."
-        tone="primary"
-        icon={<IconRefresh />}
-        className="md:col-span-2 xl:col-span-2"
-      >
-        {data.recentTransfersOrUpdatedProducts.length === 0 ? (
-          <p className="text-sm text-page-muted">No movement recorded yet.</p>
-        ) : (
-          <ul className="space-y-2 max-h-52 overflow-y-auto">
-            {data.recentTransfersOrUpdatedProducts.slice(0, 8).map((p) => (
-              <li
-                key={p.productId}
-                className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-neutral-200/70 bg-neutral-50/50 px-3 py-2 text-sm dark:border-neutral-600 dark:bg-neutral-900/30"
-              >
-                <span className="font-medium text-page-title truncate max-w-[12rem]">
-                  {p.name || p.productId}
-                </span>
-                <span className="text-page-muted text-xs">{p.location ?? '—'}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </AnalyticsCard>
-
-      <AnalyticsCard
-        title="Products by Location"
-        description="Top hubs from cached location fields."
-        tone="neutral"
-        icon={<IconMap />}
-        className="md:col-span-2 xl:col-span-3"
-      >
-        {data.productsByLocation.length === 0 ? (
-          <p className="text-sm text-page-muted">No locations recorded.</p>
-        ) : (
-          <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {data.productsByLocation.slice(0, 12).map((row) => (
-              <li
-                key={row.location}
-                className="flex items-center justify-between gap-2 rounded-lg border border-neutral-200/70 bg-neutral-50/50 px-3 py-2 text-sm dark:border-neutral-600 dark:bg-neutral-900/30"
-              >
-                <span className="truncate text-page-title font-medium">{row.location}</span>
-                <span className="tabular-nums text-page-muted shrink-0">{row.count}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </AnalyticsCard>
-    </div>
-  );
+function DistributorAnalytics({
+  data,
+  onRefresh,
+}: {
+  data: DistributorDashboardSummary;
+  onRefresh?: () => void;
+}) {
+  return <DistributorSupplyChainAnalytics data={data} onRefresh={onRefresh} />;
 }
 
-function RetailerAnalytics({ data }: { data: RetailerDashboardSummary }) {
-  const entries = Object.entries(data.productsByStatus).sort((a, b) => b[1] - a[1]);
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-      <AnalyticsCard
-        title="Store Products"
-        description="Approximation: delivered or retail-like locations."
-        tone="success"
-        icon={<IconStore />}
-      >
-        <BigNumber>{data.productsAtRetailLocationsCount}</BigNumber>
-      </AnalyticsCard>
-
-      <AnalyticsCard
-        title="Expiring Soon"
-        description="Products with expiry in the next 7 days (network-wide)."
-        tone="warning"
-        icon={<IconClock />}
-      >
-        <BigNumber>{data.expiringSoonCount}</BigNumber>
-      </AnalyticsCard>
-
-      <AnalyticsCard
-        title="Recently Updated"
-        description="Latest timestamps from product records."
-        tone="primary"
-        icon={<IconRefresh />}
-        className="md:col-span-2 xl:col-span-2"
-      >
-        {data.recentlyUpdatedProducts.length === 0 ? (
-          <p className="text-sm text-page-muted">No updates yet.</p>
-        ) : (
-          <ul className="space-y-2 max-h-44 overflow-y-auto">
-            {data.recentlyUpdatedProducts.slice(0, 6).map((p) => (
-              <li
-                key={p.productId}
-                className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-neutral-200/70 bg-neutral-50/50 px-3 py-2 text-sm dark:border-neutral-600 dark:bg-neutral-900/30"
-              >
-                <span className="font-medium text-page-title truncate max-w-[14rem]">
-                  {p.name || p.productId}
-                </span>
-                <span className="text-page-muted text-xs">{p.status ?? '—'}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </AnalyticsCard>
-
-      <AnalyticsCard
-        title="Product Status Summary"
-        description="Counts by chain status in PostgreSQL."
-        tone="neutral"
-        icon={<IconLayers />}
-        className="md:col-span-2 xl:col-span-4"
-      >
-        {entries.length === 0 ? (
-          <p className="text-sm text-page-muted">No products found.</p>
-        ) : (
-          <ul className="flex flex-wrap gap-2">
-            {entries.map(([status, count]) => (
-              <li
-                key={status}
-                className="inline-flex items-center gap-2 rounded-lg border border-neutral-200/90 bg-neutral-50/90 px-3 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-900/40"
-              >
-                <span className="font-medium text-page-title">{status}</span>
-                <span className="tabular-nums text-page-muted">{count}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </AnalyticsCard>
-    </div>
-  );
+function RetailerAnalytics({
+  data,
+  onRefresh,
+}: {
+  data: RetailerDashboardSummary;
+  onRefresh?: () => void;
+}) {
+  return <RetailerSupplyChainAnalytics data={data} onRefresh={onRefresh} />;
 }
 
 function RegulatorAnalytics({ data }: { data: RegulatorDashboardSummary }) {
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-sky-200/80 bg-gradient-to-r from-sky-50/80 to-slate-50/50 px-5 py-4 dark:border-sky-800/50 dark:from-sky-950/25 dark:to-neutral-900/40">
-        <p className="text-sm text-page-body">
-          Compliance oversight — review organizations, inspect product metadata, and monitor platform
-          transparency. You cannot create or transfer products.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button as={Link} to="/regulator/organizations" variant="primary" size="sm">
-            Review organizations
-          </Button>
-          <Button as={Link} to="/regulator/products" variant="secondary" size="sm">
-            Review products
-          </Button>
-          <Button as={Link} to="/regulator/transparency" variant="ghost" size="sm">
-            System transparency
-          </Button>
-        </div>
+      <div className="flex flex-wrap gap-2">
+        <Button as={Link} to="/regulator/organizations" variant="primary" size="sm">
+          Review organizations
+        </Button>
+        <Button as={Link} to="/regulator/products" variant="secondary" size="sm">
+          Review products
+        </Button>
+        <Button as={Link} to="/regulator/transparency" variant="ghost" size="sm">
+          System transparency
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -794,16 +528,27 @@ function ConsumerAnalytics({ data }: { data: ConsumerDashboardSummary }) {
   );
 }
 
-function renderByRole(role: UserRole, data: DashboardSummaryData) {
+function renderByRole(
+  role: UserRole,
+  data: DashboardSummaryData,
+  onRefresh?: () => void
+) {
   switch (role) {
     case 'admin':
       return <AdminAnalytics data={data as AdminDashboardSummary} />;
     case 'manufacturer':
       return <ManufacturerAnalytics data={data as ManufacturerDashboardSummary} />;
     case 'distributor':
-      return <DistributorAnalytics data={data as DistributorDashboardSummary} />;
+      return (
+        <DistributorAnalytics
+          data={data as DistributorDashboardSummary}
+          onRefresh={onRefresh}
+        />
+      );
     case 'retailer':
-      return <RetailerAnalytics data={data as RetailerDashboardSummary} />;
+      return (
+        <RetailerAnalytics data={data as RetailerDashboardSummary} onRefresh={onRefresh} />
+      );
     case 'consumer':
       return <ConsumerAnalytics data={data as ConsumerDashboardSummary} />;
     case 'regulator':
@@ -818,13 +563,13 @@ function skeletonCountForRole(role: UserRole): number {
     case 'admin':
       return 6;
     case 'regulator':
-      return 5;
+      return 6;
     case 'manufacturer':
-      return 4;
+      return 6;
     case 'distributor':
-      return 3;
+      return 8;
     case 'retailer':
-      return 4;
+      return 8;
     case 'consumer':
       return 5;
     default:
@@ -856,17 +601,9 @@ export function DashboardAnalytics({
   return (
     <section className="space-y-5" aria-labelledby="dashboard-analytics-heading">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-        <div className="space-y-1">
-          <h3
-            id="dashboard-analytics-heading"
-            className="text-lg font-semibold text-page-title"
-          >
-            Analytics
-          </h3>
-          <p className="text-sm text-page-muted max-w-2xl leading-relaxed">
-            Summary statistics from PostgreSQL, reflecting synchronized ledger activity where applicable.
-          </p>
-        </div>
+        <h3 id="dashboard-analytics-heading" className="text-lg font-semibold text-page-title">
+          Analytics
+        </h3>
         {onRefresh && (
           <Button
             type="button"
@@ -888,7 +625,7 @@ export function DashboardAnalytics({
 
       {loading && <SkeletonGrid count={skeletonCountForRole(role)} />}
 
-      {!loading && !error && payload && renderByRole(payload.role, payload.data)}
+      {!loading && !error && payload && renderByRole(payload.role, payload.data, onRefresh)}
     </section>
   );
 }

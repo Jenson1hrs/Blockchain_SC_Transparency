@@ -7,6 +7,7 @@ import { getToken } from '../utils/authStorage';
 import type { UserRole } from '../types';
 import { ThemeToggle } from './ThemeToggle';
 import { Footer } from './Footer';
+import { NotificationBell } from './NotificationBell';
 
 interface AppShellProps {
   title: string;
@@ -29,6 +30,7 @@ function mainNavForRole(role: UserRole | null, authed: boolean): NavItem[] {
       { to: '/verify', labelKey: 'nav.verify' },
       { to: '/admin/users', labelKey: 'nav.users' },
       { to: '/admin/system', labelKey: 'nav.system' },
+      { to: '/notifications', labelKey: 'nav.notifications' },
       { to: '/profile', labelKey: 'nav.profile' },
     ];
   }
@@ -39,6 +41,7 @@ function mainNavForRole(role: UserRole | null, authed: boolean): NavItem[] {
       { to: '/regulator/organizations', labelKey: 'nav.regulatorOrgs' },
       { to: '/regulator/products', labelKey: 'nav.regulatorProducts' },
       { to: '/regulator/transparency', labelKey: 'nav.regulatorTransparency' },
+      { to: '/notifications', labelKey: 'nav.notifications' },
       { to: '/profile', labelKey: 'nav.profile' },
     ];
   }
@@ -47,19 +50,33 @@ function mainNavForRole(role: UserRole | null, authed: boolean): NavItem[] {
       { to: '/home', labelKey: 'nav.home' },
       { to: '/create', labelKey: 'nav.create' },
       { to: '/my-products', labelKey: 'nav.myProducts' },
-      { to: '/transfer', labelKey: 'nav.transfer' },
+      { to: '/transfer', labelKey: 'nav.requestTransfer' },
       { to: '/verify', labelKey: 'nav.verify' },
+      { to: '/notifications', labelKey: 'nav.notifications' },
       { to: '/profile', labelKey: 'nav.profile' },
     ];
   }
-  if (role === 'distributor' || role === 'retailer') {
+  if (role === 'distributor') {
     return [
       { to: '/home', labelKey: 'nav.home' },
       { to: '/assigned-products', labelKey: 'nav.assignedProducts' },
-      { to: '/verify', labelKey: 'nav.verify' },
-      { to: '/transfer', labelKey: 'nav.transfer' },
+      { to: '/transfer', labelKey: 'nav.transfers' },
       { to: '/location', labelKey: 'nav.location' },
+      { to: '/verify', labelKey: 'nav.verify' },
       { to: '/expiring', labelKey: 'nav.expiring' },
+      { to: '/notifications', labelKey: 'nav.notifications' },
+      { to: '/profile', labelKey: 'nav.profile' },
+    ];
+  }
+  if (role === 'retailer') {
+    return [
+      { to: '/home', labelKey: 'nav.home' },
+      { to: '/assigned-products', labelKey: 'nav.retailStock' },
+      { to: '/transfer', labelKey: 'nav.incomingTransfers' },
+      { to: '/location', labelKey: 'nav.updateStoreLocation' },
+      { to: '/verify', labelKey: 'nav.verify' },
+      { to: '/expiring', labelKey: 'nav.expiring' },
+      { to: '/notifications', labelKey: 'nav.notifications' },
       { to: '/profile', labelKey: 'nav.profile' },
     ];
   }
@@ -67,8 +84,9 @@ function mainNavForRole(role: UserRole | null, authed: boolean): NavItem[] {
   return [
     { to: '/home', labelKey: 'nav.home' },
     { to: '/verify', labelKey: 'nav.verify' },
+    { to: '/inventory', labelKey: 'nav.myInventory', badgeInventory: true },
     { to: '/expiring', labelKey: 'nav.expiring' },
-    { to: '/inventory', labelKey: 'nav.inventory', badgeInventory: true },
+    { to: '/notifications', labelKey: 'nav.notifications' },
     { to: '/profile', labelKey: 'nav.profile' },
   ];
 }
@@ -91,7 +109,7 @@ const AppShell = ({ title, subtitle, children }: AppShellProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || user.role !== 'consumer') {
       setInventoryCount(0);
       return;
     }
@@ -162,6 +180,7 @@ const AppShell = ({ title, subtitle, children }: AppShellProps) => {
       </div>
     ) : (
       <div className="flex shrink-0 items-center gap-2">
+        <NotificationBell />
         <ThemeToggle compact />
         {user && (
           <div className="relative flex justify-end">
@@ -209,7 +228,6 @@ const AppShell = ({ title, subtitle, children }: AppShellProps) => {
   return (
     <div className="app-bg min-h-screen px-4 py-8 sm:px-5">
       <div className="mx-auto max-w-5xl animate-fade-up">
-        {/* Page title — scrolls with content */}
         <div className="mb-5 md:mb-6">
           <h1 className="text-2xl font-bold leading-tight text-page-title md:text-3xl">{title}</h1>
           {subtitle ? (
@@ -227,7 +245,6 @@ const AppShell = ({ title, subtitle, children }: AppShellProps) => {
           )}
         </div>
 
-        {/* Sticky navigation + theme + profile */}
         <header className={stickyBarClass}>
           <div className="flex flex-wrap items-center justify-between gap-2 gap-y-2.5">
             <NavRow />
@@ -236,7 +253,7 @@ const AppShell = ({ title, subtitle, children }: AppShellProps) => {
         </header>
 
         {children}
-        {user && <Footer user={user} />}
+        <Footer user={user} />
       </div>
     </div>
   );

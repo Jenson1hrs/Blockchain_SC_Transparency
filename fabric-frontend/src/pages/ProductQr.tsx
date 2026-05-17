@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { getProductQr } from '../api/productService';
 import AppShell from '../components/AppShell';
 import type { ProductQrResult } from '../types';
+import { QR_URL_HELPER_TEXT, verifyRouteFromQrUrl } from '../utils/verifyQrUrl';
+import { Alert } from '../components/Alert';
+import { friendlyQrLoadError } from '../utils/friendlyErrors';
 
 const ProductQr = () => {
   const { productId } = useParams<{ productId: string }>();
@@ -21,7 +24,8 @@ const ProductQr = () => {
         const qr = await getProductQr(productId);
         setData(qr);
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load QR');
+        const raw = e instanceof Error ? e.message : 'Failed to load QR';
+        setError(friendlyQrLoadError(raw));
       } finally {
         setLoading(false);
       }
@@ -37,6 +41,10 @@ const ProductQr = () => {
     );
   }
 
+  const verifyRoute = data ? verifyRouteFromQrUrl(data.qrUrl) : '/verify';
+  const usesLocalhost =
+    data != null && /localhost|127\.0\.0\.1/i.test(data.qrUrl);
+
   return (
     <AppShell title="Product QR" subtitle="Regenerate QR anytime from blockchain data.">
       <div className="max-w-2xl mx-auto">
@@ -46,11 +54,7 @@ const ProductQr = () => {
               Product ID: <span className="font-mono">{productId}</span>
             </p>
 
-            {error && (
-              <pre className="text-xs text-red-800 bg-red-50 p-3 rounded-lg border border-red-200 whitespace-pre-wrap font-sans overflow-x-auto">
-                {error}
-              </pre>
-            )}
+            {error && <Alert type="error">{error}</Alert>}
 
             {data && (
               <>
@@ -58,18 +62,27 @@ const ProductQr = () => {
                   <img
                     src={data.qrCode}
                     alt={`QR for ${productId}`}
-                    className="mx-auto max-w-[260px] border border-gray-200 rounded"
+                    className="mx-auto max-w-[260px] border border-gray-200 rounded dark:border-neutral-600"
                   />
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-neutral-200 mb-2">Verification URL</p>
+                  <p className="text-xs text-page-muted mb-2 leading-relaxed">{QR_URL_HELPER_TEXT}</p>
+                  {usesLocalhost && (
+                    <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2 dark:text-amber-200 dark:bg-amber-950/30 dark:border-amber-900/50">
+                      This URL uses <strong>localhost</strong>. Set{' '}
+                      <code className="font-mono text-[11px]">FRONTEND_URL</code> on the API to your
+                      LAN IP (e.g. <code className="font-mono text-[11px]">http://192.168.x.x:5173</code>
+                      ), restart the API, then open this page again to regenerate the QR.
+                    </p>
+                  )}
                   <div className="flex flex-wrap gap-2 items-center">
-                    <code className="text-xs bg-gray-100 px-2 py-1 rounded break-all flex-1 min-w-0">
+                    <code className="text-xs bg-gray-100 dark:bg-neutral-800 px-2 py-1 rounded break-all flex-1 min-w-0">
                       {data.qrUrl}
                     </code>
                     <button
                       type="button"
-                      className="text-sm text-blue-600 shrink-0"
+                      className="text-sm text-blue-600 shrink-0 dark:text-primary-400"
                       onClick={() => void navigator.clipboard.writeText(data.qrUrl)}
                     >
                       Copy
@@ -77,12 +90,12 @@ const ProductQr = () => {
                   </div>
                 </div>
                 <div className="text-center">
-                  <a
-                    href={data.qrUrl}
-                    className="text-blue-600 hover:underline text-sm"
+                  <Link
+                    to={verifyRoute}
+                    className="text-blue-600 hover:underline text-sm dark:text-primary-400"
                   >
                     Open verify page →
-                  </a>
+                  </Link>
                 </div>
               </>
             )}

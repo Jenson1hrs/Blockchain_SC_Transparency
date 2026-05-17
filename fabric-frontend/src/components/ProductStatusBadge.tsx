@@ -24,6 +24,30 @@ export const ProductStatusBadge: React.FC<ProductStatusBadgeProps> = ({
           text: 'text-warning-800 dark:text-warning-100',
           label: 'In Transit',
         };
+      case 'transfer pending':
+        return {
+          bg: 'bg-amber-100 dark:bg-amber-900/40',
+          text: 'text-amber-900 dark:text-amber-100',
+          label: 'Transfer Pending',
+        };
+      case 'received by distributor':
+        return {
+          bg: 'bg-sky-100 dark:bg-sky-900/40',
+          text: 'text-sky-900 dark:text-sky-100',
+          label: 'Received by Distributor',
+        };
+      case 'received by retailer':
+        return {
+          bg: 'bg-indigo-100 dark:bg-indigo-900/40',
+          text: 'text-indigo-900 dark:text-indigo-100',
+          label: 'Received by Retailer',
+        };
+      case 'retail ready':
+        return {
+          bg: 'bg-success-100 dark:bg-success-900/40',
+          text: 'text-success-800 dark:text-success-100',
+          label: 'Retail Ready',
+        };
       case 'delivered':
         return {
           bg: 'bg-success-100 dark:bg-success-900/40',

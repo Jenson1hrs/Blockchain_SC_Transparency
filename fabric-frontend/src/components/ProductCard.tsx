@@ -27,7 +27,6 @@ interface ProductCardProps {
     level: 'expired' | 'urgent' | 'warning' | 'safe';
   };
   actions?: React.ReactNode;
-  /** Rule-based allergy / dietary / halal alerts (separate from expiry). */
   personalizedAlerts?: PersonalizedAlert[];
   className?: string;
 }
@@ -39,21 +38,30 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   personalizedAlerts,
   className,
 }) => {
+  const badgeRow = (
+    <>
+      {product.status && <ProductStatusBadge status={product.status} />}
+      {expiryReminder && <ExpiryBadge level={expiryReminder.level} />}
+      {product.metadataComplete === false && <MetadataIncompleteBadge />}
+      {product.manufacturerOrganizationFlagged && <OrganizationFlaggedBadge compact />}
+      {product.manufacturerOrganizationVerified && <VerifiedOrganizationBadge compact />}
+    </>
+  );
+
   return (
     <div className={`card p-6 ${className || ''}`}>
-      <div className="flex gap-6">
-        {/* Product Image */}
-        <div className="flex-shrink-0">
+      <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
+        <div className="flex shrink-0 justify-center sm:justify-start">
           {product.imageUrl ? (
             <img
               src={product.imageUrl}
               alt={product.name}
-              className="w-24 h-24 object-cover rounded-lg border border-neutral-200 dark:border-neutral-600"
+              className="h-24 w-24 rounded-lg border border-neutral-200 object-cover dark:border-neutral-600"
             />
           ) : (
-            <div className="w-24 h-24 bg-neutral-100 dark:bg-neutral-900/80 rounded-lg border border-neutral-200 dark:border-neutral-600 flex items-center justify-center">
+            <div className="flex h-24 w-24 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-900/80">
               <svg
-                className="w-8 h-8 text-neutral-400 dark:text-neutral-500"
+                className="h-8 w-8 text-neutral-400 dark:text-neutral-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -69,20 +77,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Product Details */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 truncate">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="min-w-0 flex-1 space-y-1">
+              <h3 className="text-lg font-semibold break-words text-neutral-900 dark:text-neutral-100 sm:truncate">
                 {product.name}
               </h3>
               {product.description && (
-                <p className="text-sm text-neutral-600 dark:text-neutral-200 mt-1 line-clamp-2">
+                <p className="mt-1 text-sm leading-relaxed break-words text-neutral-600 dark:text-neutral-200 sm:line-clamp-2">
                   {product.description}
                 </p>
               )}
               {(product.manufacturerDisplayName || product.manufacturer) && (
-                <p className="text-sm text-neutral-500 dark:text-neutral-300 mt-1">
+                <p className="mt-1 text-sm break-words text-neutral-500 dark:text-neutral-300">
                   Manufacturer:{' '}
                   <OrganizationLink
                     userId={product.manufacturerUserId}
@@ -92,28 +99,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               )}
             </div>
 
-            {/* Status Badges */}
-            <div className="flex flex-col gap-2 items-end">
-              {product.status && <ProductStatusBadge status={product.status} />}
-              {expiryReminder && <ExpiryBadge level={expiryReminder.level} />}
-              {product.metadataComplete === false && <MetadataIncompleteBadge />}
-              {product.manufacturerOrganizationFlagged && (
-                <OrganizationFlaggedBadge compact />
-              )}
-              {product.manufacturerOrganizationVerified && (
-                <VerifiedOrganizationBadge compact />
-              )}
+            <div className="flex flex-wrap gap-2 sm:max-w-[11rem] sm:shrink-0 sm:flex-col sm:items-end">
+              {badgeRow}
             </div>
           </div>
 
           {personalizedAlerts && personalizedAlerts.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-600">
+            <div className="border-t border-neutral-200 pt-4 dark:border-neutral-600">
               <PersonalizedAlertsList alerts={personalizedAlerts} compact />
             </div>
           )}
 
-          {/* Actions */}
-          {actions && <div className="mt-4 flex gap-2">{actions}</div>}
+          {actions && (
+            <div className="flex w-full flex-col gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-600 sm:flex-row sm:flex-wrap sm:border-0 sm:pt-0">
+              {actions}
+            </div>
+          )}
         </div>
       </div>
     </div>

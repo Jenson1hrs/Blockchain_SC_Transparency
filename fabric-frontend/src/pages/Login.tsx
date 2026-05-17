@@ -7,6 +7,7 @@ import { loginApi } from '../api/authService';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/Button';
 import { Alert } from '../components/Alert';
+import { resolvePostLoginPath } from '../utils/routeAccess';
 
 export default function Login() {
   const { user, loginWithSession } = useAuth();
@@ -45,12 +46,8 @@ export default function Login() {
         return;
       }
       loginWithSession(res.token, res.user);
-      const goHome =
-        !from ||
-        from === '/' ||
-        from === '/login' ||
-        from === '/register';
-      navigate(goHome ? '/home' : from, {
+      const destination = resolvePostLoginPath(from, res.user.role);
+      navigate(destination, {
         replace: true,
         state: {
           flashSuccess: t('auth.flashLogin', { name: res.user.name }),

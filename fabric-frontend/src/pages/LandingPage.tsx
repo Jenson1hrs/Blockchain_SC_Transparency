@@ -8,6 +8,7 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import LanguageSelect from '../components/LanguageSelect';
 import { LandingScrollAmbient } from '../components/LandingScrollAmbient';
 import { ScrollReveal } from '../components/ScrollReveal';
+import { Footer } from '../components/Footer';
 import { useDocumentScrollProgress } from '../hooks/useDocumentScrollProgress';
 
 export default function LandingPage() {
@@ -176,7 +177,7 @@ export default function LandingPage() {
               className="flex items-center gap-3 hover:opacity-90 transition-opacity"
             >
               <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg text-white font-semibold">
-                BC
+                VC
               </div>
               <div>
                 <p className="text-base font-semibold text-slate-900 dark:text-neutral-100">{t('landing.brand')}</p>
@@ -524,105 +525,11 @@ export default function LandingPage() {
         </ScrollReveal>
       </section>
 
-      {/* Footer */}
-      <footer className="relative z-[1] bg-slate-950 text-white py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-950 to-transparent opacity-80 -z-10" />
-        <div className="absolute top-8 right-8 w-48 h-48 rounded-full bg-primary-500/10 blur-3xl -z-10" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold">BC</span>
-                </div>
-                <div>
-                  <p className="text-lg font-semibold">{t('landing.brand')}</p>
-                  <p className="text-sm text-slate-400">{t('landing.tagline')}</p>
-                </div>
-              </div>
-              <p className="text-slate-400 mb-6 max-w-md leading-relaxed">{t('landing.footerBlurb')}</p>
-              <div className="flex items-center gap-4 text-2xl">
-                <div>🔒</div>
-                <div>📱</div>
-                <div>⏰</div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-slate-100 mb-4">{t('landing.footerPlatform')}</h3>
-              <ul className="space-y-2 text-slate-400">
-                <li>
-                  <Link
-                    to="/verify"
-                    className="hover:text-white transition-colors"
-                  >
-                    {t('landing.footerVerify')}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/inventory"
-                    className="hover:text-white transition-colors"
-                  >
-                    {t('landing.footerInventory')}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/expiring"
-                    className="hover:text-white transition-colors"
-                  >
-                    {t('landing.footerExpiry')}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/create"
-                    className="hover:text-white transition-colors"
-                  >
-                    {t('landing.footerCreate')}
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-slate-100 mb-4">{t('landing.footerCompany')}</h3>
-              <ul className="space-y-2 text-slate-400">
-                <li>
-                  <Link
-                    to="/login"
-                    className="hover:text-white transition-colors"
-                  >
-                    {t('landing.footerSignIn')}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/register"
-                    className="hover:text-white transition-colors"
-                  >
-                    {t('landing.footerRegister')}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/profile"
-                    className="hover:text-white transition-colors"
-                  >
-                    {t('landing.footerProfile')}
-                  </Link>
-                </li>
-                <li className="text-slate-500">{t('landing.footerFyp')}</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-slate-800 mt-12 pt-8 text-center text-slate-500">
-            <p>{t('landing.footerCopy')}</p>
-          </div>
+      <div className="relative z-[1] bg-slate-950 px-4 pb-10 pt-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <Footer user={user} variant="landing" />
         </div>
-      </footer>
+      </div>
       </div>
     </div>
   );

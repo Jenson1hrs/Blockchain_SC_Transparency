@@ -2,29 +2,24 @@ const fabricService = require('../services/fabricService');
 const postgresService = require('../services/dbService');
 const userService = require('../services/userService');
 const ownershipService = require('../services/ownershipService');
+const productStatusService = require('../services/productStatusService');
+const transferRequestService = require('../services/transferRequestService');
+const notificationTriggers = require('../services/notificationTriggers');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
-
-const SECRET = "mySuperSecretKey"; // Change this to a secure key in production
+const { buildVerifyQrUrl } = require('../utils/frontendUrl');
+const { getQrSecret } = require('../utils/qrSecret');
 
 function generateHash(productId, batchNumber) {
     return crypto
         .createHash('sha256')
-        .update(productId + batchNumber + SECRET)
+        .update(productId + batchNumber + getQrSecret())
         .digest('hex');
 }
 
 function verifyQR(productId, batchNumber, hash) {
     const expectedHash = generateHash(productId, batchNumber);
     return expectedHash === hash;
-}
-
-function getFrontendBase() {
-    const frontendBase = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
-    if (/localhost|127\.0\.0\.1/i.test(frontendBase)) {
-        console.warn('[qr] FRONTEND_URL uses localhost. External scanners/phones cannot open this URL.');
-    }
-    return frontendBase;
 }
 
 async function applyManufacturerOwnership(data, reqUser) {
@@ -95,17 +90,24 @@ exports.createProduct = async (req, res) => {
 
         const apiProduct = postgresService.mapProductToApi(dbResult);
         const hash = generateHash(data.id, data.batch);
-        // Phones cannot open localhost — set FRONTEND_URL to http://<laptop-LAN-ip>:5173 before demo
-        const frontendBase = getFrontendBase();
-        const qrData = `${frontendBase}/verify/${encodeURIComponent(data.id)}?batch=${encodeURIComponent(data.batch)}&hash=${encodeURIComponent(hash)}`;
+        const qrData = buildVerifyQrUrl(data.id, data.batch, hash);
         const qrImage = await QRCode.toDataURL(qrData);
+
+        const mfgUserId = data.manufacturerUserId ?? req.user?.id;
+        if (mfgUserId && req.user?.role === 'manufacturer') {
+            void notificationTriggers.onProductCreated(mfgUserId, data.id).catch(() => {});
+            void notificationTriggers.onQrReady(mfgUserId, data.id).catch(() => {});
+        } else if (mfgUserId) {
+            void notificationTriggers.onProductCreated(mfgUserId, data.id).catch(() => {});
+            void notificationTriggers.onQrReady(mfgUserId, data.id).catch(() => {});
+        }
 
         res.json({
             success: true,
             message: "Product stored successfully",
             data: apiProduct,
-            database: dbResult,
             qrCode: qrImage,
+            qrUrl: qrData,
             qrRaw: qrData
         });
 
@@ -133,9 +135,14 @@ exports.getProductQr = async (req, res) => {
         }
 
         const hash = generateHash(product.productId || id, batchNumber);
-        const frontendBase = getFrontendBase();
-        const qrUrl = `${frontendBase}/verify/${encodeURIComponent(product.productId || id)}?batch=${encodeURIComponent(batchNumber)}&hash=${encodeURIComponent(hash)}`;
+        const qrUrl = buildVerifyQrUrl(product.productId || id, batchNumber, hash);
         const qrCode = await QRCode.toDataURL(qrUrl);
+
+        const dbRow = await postgresService.getProductFromDB(id);
+        const mfgUserId = dbRow?.manufacturer_user_id;
+        if (mfgUserId) {
+            void notificationTriggers.onQrReady(mfgUserId, product.productId || id).catch(() => {});
+        }
 
         res.json({
             success: true,
@@ -173,12 +180,25 @@ exports.getProduct = async (req, res) => {
 
 exports.getExpiringProducts = async (req, res) => {
     try {
+        const userService = require('../services/userService');
+        const notificationSyncService = require('../services/notificationSyncService');
+        const expiringService = require('../services/expiringService');
+        const userRow = await userService.findUserById(req.user.id);
+        await notificationSyncService.syncDerivedNotifications(req.user.id, userRow);
         const days = Number(req.query.days || 7);
-        const safeDays = Number.isFinite(days) && days > 0 ? Math.min(days, 30) : 7;
-        const rows = await postgresService.getExpiringProducts(safeDays);
-        res.json({ success: true, data: rows });
+        const includeExpired =
+            req.query.includeExpired === '1' ||
+            req.query.includeExpired === 'true';
+        const { products, meta } = await expiringService.getExpiringForUser(
+            req.user.role,
+            req.user.id,
+            { days, includeExpired }
+        );
+        res.json({ success: true, data: products, meta });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        const status = error.statusCode || 500;
+        if (status >= 500) console.error('getExpiringProducts', error);
+        res.status(status).json({ success: false, message: error.message });
     }
 };
 
@@ -259,8 +279,16 @@ exports.updateLocation = async (req, res) => {
         await ownershipService.assertCanUpdateLocation(req.user, id);
 
         const result = await fabricService.updateLocation(id, String(location).trim());
+        if (req.user.role === 'retailer') {
+          await productStatusService.updateProductStatus(id, productStatusService.STATUSES.RETAIL_READY);
+        }
         const dbRow = await postgresService.getProductFromDB(id);
         const data = dbRow ? postgresService.mapProductToApi(dbRow) : result;
+        if (dbRow?.current_owner_user_id) {
+            void notificationTriggers
+                .onLocationUpdated(dbRow.current_owner_user_id, id)
+                .catch(() => {});
+        }
         return res.json({ success: true, data });
     } catch (error) {
         const status = error.statusCode || 500;
@@ -271,8 +299,14 @@ exports.updateLocation = async (req, res) => {
 
 exports.getHistory = async (req, res) => {
     try {
-        const result = await fabricService.getHistory(req.params.id);
-        res.json({ success: true, data: result });
+        const productId = req.params.id;
+        const { timeline, chain } = await transferRequestService.getCombinedProductTimeline(productId);
+        res.json({
+            success: true,
+            data: timeline,
+            timeline,
+            chain,
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -293,6 +327,7 @@ exports.verifyQR = async (req, res) => {
         const isValid = verifyQR(productId, batchNumber, hash);
 
         if (!isValid) {
+            void notificationTriggers.onFakeQrDetected(productId).catch(() => {});
             return res.json({
                 success: false,
                 verificationStatus: 'fake',

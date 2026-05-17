@@ -52,8 +52,29 @@ function authorizeRoles(...roles) {
   };
 }
 
+/** Sets req.user when a valid Bearer token is present; otherwise continues as guest. */
+function optionalAuthenticateUser(req, res, next) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return next();
+  try {
+    const payload = jwt.verify(token, getJwtSecret());
+    const id = payload.sub ?? payload.id;
+    if (id == null) return next();
+    req.user = {
+      id: typeof id === 'string' ? parseInt(id, 10) : id,
+      email: payload.email,
+      role: payload.role,
+    };
+  } catch {
+    /* ignore invalid token for optional auth */
+  }
+  return next();
+}
+
 module.exports = {
   authenticateUser,
+  optionalAuthenticateUser,
   authorizeRoles,
   getJwtSecret,
 };

@@ -36,7 +36,7 @@ export default function OrganizationProfile() {
   return (
     <AppShell
       title={org?.displayName ?? 'Organization'}
-      subtitle="Verified supply-chain organization on BlockSure"
+      subtitle="Verified supply-chain organization on VeriChain"
     >
       <div className="max-w-3xl mx-auto space-y-6 animate-fade-up">
         {loading && <p className="text-sm text-page-muted">Loading organization…</p>}

@@ -96,7 +96,7 @@ export interface Product {
   usageInstructions?: string | null;
   location: string;
   owner: string;
-  status: 'Manufactured' | 'In Transit' | 'Delivered';
+  status: string;
   timestamp: string;
   metadataComplete?: boolean | null;
   metadataCompletionPercent?: number | null;
@@ -120,6 +120,35 @@ export interface ProductHistory {
     nanos?: number;
   };
   data: Product;
+}
+
+export interface ProductTimelineEntry {
+  id: string;
+  source: 'on-chain' | 'workflow' | 'personal';
+  label: string;
+  status: string;
+  timestamp: string;
+  location?: string;
+  actor?: string;
+  notes?: string;
+  txId?: string;
+}
+
+export type TransferRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
+
+export interface TransferRequest {
+  id: number;
+  productId: string;
+  productName: string | null;
+  fromUserId: number;
+  toUserId: number;
+  fromOrgName: string;
+  toOrgName: string;
+  status: TransferRequestStatus;
+  message: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  respondedAt: string | null;
 }
 
 export interface ApiResponse<T> {
@@ -199,12 +228,32 @@ export interface AdminDashboardSummary {
   recentUsers?: DashboardRecentUser[];
 }
 
+export interface DashboardTransferRequestSummary {
+  id: number;
+  productId: string;
+  productName: string | null;
+  fromOrgName: string;
+  toOrgName: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
+  message?: string | null;
+  rejectionReason?: string | null;
+  createdAt: string;
+  respondedAt: string | null;
+}
+
 export interface ManufacturerDashboardSummary {
   totalProducts: number;
+  productsCreatedCount: number;
+  productsStillInCustodyCount: number;
+  outboundPendingCount: number;
+  outboundAcceptedCount: number;
+  outboundRejectedCount: number;
+  recentOutboundRequests: DashboardTransferRequestSummary[];
   productsByStatus: Record<string, number>;
   recentProducts: DashboardProductSnippet[];
   missingMetadataCount: number;
   metadataCompletionPercent?: number;
+  metadataCompletionPercentage?: number;
   recentIncompleteProducts?: DashboardProductSnippet[];
   qrSupportedProductsCount?: number;
 }
@@ -216,18 +265,37 @@ export interface DashboardLocationCount {
 
 export interface DistributorDashboardSummary {
   assignedProductsCount?: number;
+  currentlyHeldCount: number;
+  inTransitCount: number;
   inTransitProductsCount: number;
-  recentTransfersOrUpdatedProducts: DashboardProductSnippet[];
+  inboundPendingCount: number;
+  inboundAcceptedCount: number;
+  inboundRejectedCount: number;
+  outboundPendingCount: number;
+  outboundAcceptedCount: number;
+  outboundRejectedCount: number;
+  recentInboundRequests: DashboardTransferRequestSummary[];
+  recentOutboundRequests: DashboardTransferRequestSummary[];
   productsByLocation: DashboardLocationCount[];
+  recentTransfersOrUpdatedProducts?: DashboardProductSnippet[];
   transferRelatedStatusCount?: Record<string, number>;
 }
 
 export interface RetailerDashboardSummary {
   assignedProductsCount?: number;
-  productsAtRetailLocationsCount: number;
+  currentlyHeldCount: number;
+  inboundPendingCount: number;
+  inboundAcceptedCount: number;
+  inboundRejectedCount: number;
   expiringSoonCount: number;
-  recentlyUpdatedProducts: DashboardProductSnippet[];
+  expiredCount: number;
+  readyForSaleCount: number;
+  recentInboundRequests: DashboardTransferRequestSummary[];
   productsByStatus: Record<string, number>;
+  productsAtRetailLocationsCount?: number;
+  metadataWarningCount?: number;
+  expiringOrExpiredWarningCount?: number;
+  recentlyUpdatedProducts?: DashboardProductSnippet[];
 }
 
 export interface DashboardInventoryItem {
@@ -244,6 +312,8 @@ export interface ConsumerDashboardSummary {
   expiringSoonCount: number;
   expiredCount: number;
   allergyAlertCount: number;
+  dietaryAlertCount?: number;
+  safetyAlertCount?: number;
   recentInventoryItems: DashboardInventoryItem[];
 }
 
@@ -270,4 +340,19 @@ export interface DashboardSummaryResponse {
   success: boolean;
   role: UserRole;
   data: DashboardSummaryData;
+}
+
+export type NotificationSeverity = 'info' | 'success' | 'warning' | 'danger';
+
+export interface AppNotification {
+  id: number;
+  userId: number;
+  type: string;
+  title: string;
+  message: string;
+  severity: NotificationSeverity;
+  relatedProductId: string | null;
+  relatedEntityId: number | null;
+  isRead: boolean;
+  createdAt: string;
 }

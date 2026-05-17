@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../components/AppShell';
+import { useRolePageMeta } from '../hooks/useRolePageMeta';
 import { Alert, Button } from '../components';
 import { MetadataIncompleteBadge } from '../components/MetadataIncompleteBadge';
 import {
@@ -13,6 +14,7 @@ import {
 } from '../api/regulatorService';
 
 export default function RegulatorProductsPage() {
+  const pageMeta = useRolePageMeta('regulatorProducts', 'regulator');
   const [filter, setFilter] = useState<RegulatorProductFilter>('all');
   const [searchQ, setSearchQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -46,10 +48,7 @@ export default function RegulatorProductsPage() {
   }, [load]);
 
   return (
-    <AppShell
-      title="Product registry"
-      subtitle="Searchable oversight of traceable products (read-only)"
-    >
+    <AppShell title={pageMeta.title} subtitle={pageMeta.subtitle}>
       <div className="space-y-6 animate-fade-up">
         <p className="text-sm text-page-body rounded-xl border border-sky-200/70 bg-sky-50/50 px-4 py-3 dark:border-sky-800/50 dark:bg-sky-950/25">
           Inspect metadata, verify authenticity, and open manufacturer profiles. Regulators cannot

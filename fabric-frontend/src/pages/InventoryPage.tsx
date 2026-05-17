@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../components/AppShell';
-import { Button, Alert, ProductCard } from '../components';
+import { useRolePageMeta } from '../hooks/useRolePageMeta';
+import { Button, Alert, ProductCard, ConfirmModal, Toast } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { getPersonalizedAlerts } from '../utils/personalizedAlerts';
 import type { Product } from '../types';
@@ -14,12 +15,15 @@ type SortMode = 'expiryAsc' | 'expiryDesc' | 'nameAsc';
 
 const InventoryPage = () => {
   const { user } = useAuth();
+  const pageMeta = useRolePageMeta('inventory', 'consumer');
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<InventoryFilter>('all');
   const [sortMode, setSortMode] = useState<SortMode>('expiryAsc');
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<Product | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -47,14 +51,19 @@ const InventoryPage = () => {
     void load();
   }, []);
 
-  const onRemove = async (id: string) => {
+  const confirmRemove = async () => {
+    if (!removeTarget) return;
+    const id = removeTarget.productId;
     setRemovingId(id);
     setError(null);
     try {
       await removeFromUserInventory(id);
       setItems((prev) => prev.filter((p) => p.productId !== id));
+      setRemoveTarget(null);
+      setToast({ message: `${removeTarget.name} removed from your inventory.`, type: 'success' });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to remove item');
+      setRemoveTarget(null);
     } finally {
       setRemovingId(null);
     }
@@ -106,10 +115,31 @@ const InventoryPage = () => {
   ];
 
   return (
-    <AppShell
-      title="My Inventory"
-      subtitle="Products saved to your account for quick access"
-    >
+    <AppShell title={pageMeta.title} subtitle={pageMeta.subtitle}>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      <ConfirmModal
+        isOpen={removeTarget !== null}
+        variant="warning"
+        title="Remove from inventory?"
+        description="This only removes the product from your saved list. It does not affect blockchain ownership or product records."
+        confirmText="Remove"
+        cancelText="Cancel"
+        loading={removingId !== null}
+        onConfirm={() => void confirmRemove()}
+        onCancel={() => {
+          if (removingId) return;
+          setRemoveTarget(null);
+        }}
+      >
+        {removeTarget && (
+          <p className="text-sm font-medium">
+            {removeTarget.name}{' '}
+            <span className="font-mono text-page-muted">({removeTarget.productId})</span>
+          </p>
+        )}
+      </ConfirmModal>
+
       <div className="space-y-8 animate-fade-up">
         {/* Header */}
         <div className="card p-6">
@@ -269,10 +299,10 @@ const InventoryPage = () => {
                             variant="ghost"
                             size="sm"
                             disabled={removingId === product.productId}
-                            onClick={() => void onRemove(product.productId)}
+                            onClick={() => setRemoveTarget(product)}
                             className="text-danger-600 hover:text-danger-700 hover:bg-danger-50"
                           >
-                            {removingId === product.productId ? 'Removing…' : 'Remove'}
+                            Remove
                           </Button>
                         </div>
                       }

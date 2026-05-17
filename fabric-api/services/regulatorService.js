@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const organizationService = require('./organizationService');
+const notificationTriggers = require('./notificationTriggers');
 const { assessProductMetadata } = require('./productMetadata');
 const {
   checkDatabaseHealth,
@@ -140,7 +141,7 @@ async function listOrganizations() {
 async function setOrganizationVerification(organizationUserId, verified, regulatorUserId) {
   await ensureVerificationColumns();
   const existing = await pool.query(
-    `SELECT id, role FROM users WHERE id = $1`,
+    `SELECT id, role, organization_verified FROM users WHERE id = $1`,
     [organizationUserId]
   );
   const row = existing.rows[0];
@@ -148,6 +149,7 @@ async function setOrganizationVerification(organizationUserId, verified, regulat
     return null;
   }
 
+  const wasVerified = Boolean(row.organization_verified);
   const result = await pool.query(
     `UPDATE users
      SET organization_verified = $2,
@@ -159,19 +161,27 @@ async function setOrganizationVerification(organizationUserId, verified, regulat
                organization_flagged, organization_flag_reason, organization_flagged_at, created_at`,
     [organizationUserId, Boolean(verified)]
   );
-  return mapOrgRow(result.rows[0]);
+  const mapped = mapOrgRow(result.rows[0]);
+  if (Boolean(verified) && !wasVerified) {
+    void notificationTriggers.onOrganizationApproved(organizationUserId).catch(() => {});
+  } else if (!Boolean(verified) && wasVerified) {
+    void notificationTriggers.onOrganizationRevoked(organizationUserId).catch(() => {});
+  }
+  return mapped;
 }
 
 async function setOrganizationFlag(organizationUserId, flagged, reason) {
   await ensureVerificationColumns();
-  const existing = await pool.query(`SELECT id, role FROM users WHERE id = $1`, [
-    organizationUserId,
-  ]);
+  const existing = await pool.query(
+    `SELECT id, role, organization_flagged FROM users WHERE id = $1`,
+    [organizationUserId]
+  );
   const row = existing.rows[0];
   if (!row || !organizationService.SUPPLY_CHAIN_ROLES.includes(row.role)) {
     return null;
   }
 
+  const wasFlagged = Boolean(row.organization_flagged);
   const result = await pool.query(
     `UPDATE users
      SET organization_flagged = $2,
@@ -183,7 +193,15 @@ async function setOrganizationFlag(organizationUserId, flagged, reason) {
                organization_flagged, organization_flag_reason, organization_flagged_at, created_at`,
     [organizationUserId, Boolean(flagged), reason != null ? String(reason).trim() || null : null]
   );
-  return mapOrgRow(result.rows[0]);
+  const mapped = mapOrgRow(result.rows[0]);
+  if (Boolean(flagged) && !wasFlagged) {
+    void notificationTriggers
+      .onOrganizationFlagged(organizationUserId, reason != null ? String(reason).trim() : null)
+      .catch(() => {});
+  } else if (!Boolean(flagged) && wasFlagged) {
+    void notificationTriggers.onOrganizationUnflagged(organizationUserId).catch(() => {});
+  }
+  return mapped;
 }
 
 async function listProductsForOversight({

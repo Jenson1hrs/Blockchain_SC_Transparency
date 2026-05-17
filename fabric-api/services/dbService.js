@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const { assessProductMetadata } = require('./productMetadata');
 const organizationService = require('./organizationService');
 const ownershipService = require('./ownershipService');
+const productStatusService = require('./productStatusService');
 
 async function ensureProductColumns() {
   await pool.query(`
@@ -34,7 +35,7 @@ function mapProductToApi(row) {
     batchNumber: row.batch_number,
     location: row.location,
     owner: row.owner,
-    status: row.status,
+    status: productStatusService.reconcileDisplayStatus(row),
     timestamp: row.timestamp,
     expiryDate: row.expiry_date ?? null,
     imageUrl: row.image_url ?? null,

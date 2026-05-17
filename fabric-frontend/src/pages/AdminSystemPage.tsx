@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import AppShell from '../components/AppShell';
+import { useRolePageMeta } from '../hooks/useRolePageMeta';
 import { Alert } from '../components/Alert';
 import { Button } from '../components/Button';
 import { fetchAdminSystemStatus, fetchPublicHealth } from '../api/adminService';
 import type { SystemStatusResponse } from '../types';
 
 export default function AdminSystemPage() {
+  const pageMeta = useRolePageMeta('adminSystem', 'admin');
   const [status, setStatus] = useState<SystemStatusResponse | null>(null);
   const [healthTs, setHealthTs] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,10 +49,7 @@ export default function AdminSystemPage() {
   );
 
   return (
-    <AppShell
-      title="System status"
-      subtitle="API, database, and Hyperledger Fabric connectivity"
-    >
+    <AppShell title={pageMeta.title} subtitle={pageMeta.subtitle}>
       <div className="space-y-6 animate-fade-up">
         <div className="flex flex-wrap items-center gap-3">
           <Button type="button" variant="secondary" onClick={() => void load()} disabled={loading}>

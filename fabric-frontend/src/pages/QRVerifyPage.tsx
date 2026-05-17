@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { getProduct, getProductHistory, verifyQr, getManufacturerDisplayLabel } from '../api/productService';
-import { API_BASE_URL } from '../config';
-import type { Product, ProductHistory } from '../types';
-import { formatHistoryTimestamp } from '../utils/historyTime';
+import { friendlyCreateError } from '../utils/friendlyErrors';
+import type { Product, ProductTimelineEntry } from '../types';
 import { getExpiryReminder } from '../utils/expiryReminder';
 import AppShell from '../components/AppShell';
 import {
@@ -36,7 +35,7 @@ const QRVerifyPage = () => {
   const { productId: routeProductId } = useParams<{ productId: string }>();
   const location = useLocation();
   const [state, setState] = useState<VerifyState>({ kind: 'loading' });
-  const [history, setHistory] = useState<ProductHistory[]>([]);
+  const [history, setHistory] = useState<ProductTimelineEntry[]>([]);
   const [inventoryMsg, setInventoryMsg] = useState<string | null>(null);
   const [inventoryErr, setInventoryErr] = useState<string | null>(null);
 
@@ -45,6 +44,9 @@ const QRVerifyPage = () => {
     setInventoryMsg(null);
     if (!user) {
       setInventoryErr('Sign in to save products to your inventory.');
+      return;
+    }
+    if (user.role !== 'consumer') {
       return;
     }
     try {
@@ -252,66 +254,16 @@ const QRVerifyPage = () => {
   }
 
   if (state.kind === 'error') {
-    const msg = state.message;
-    const looksLikeConnection =
-      /network error|no response|bad gateway|ECONNREFUSED|ERR_NETWORK|502|503/i.test(
-        msg,
-      );
+    const friendly = friendlyCreateError(state.message);
 
     return (
       <AppShell title="QR Verification" subtitle="Verification error">
-        <div className="max-w-2xl mx-auto animate-fade-up">
-          <div className="card p-8">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-danger-100 text-danger-600 rounded-full mb-4">
-                <svg
-                  className="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
-                {looksLikeConnection
-                  ? "Can't reach the API"
-                  : 'Verification Error'}
-              </h1>
-            </div>
-
-            {looksLikeConnection && (
-              <Alert type="warning" className="mb-6">
-                A <strong>fake hash</strong> test only works after the app can
-                talk to the server. Generic "Network Error" usually means the
-                browser never got an HTTP response (wrong API URL, API not
-                running, or CORS blocked).
-              </Alert>
-            )}
-
-            <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-6">
-              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
-                API Configuration
-              </p>
-              <p className="text-xs font-mono text-neutral-600 dark:text-neutral-200">
-                Base URL: {API_BASE_URL}
-              </p>
-            </div>
-
-            <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-8">
-              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-2">
-                Error Details
-              </p>
-              <pre className="text-xs text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap font-mono overflow-x-auto">
-                {msg}
-              </pre>
-            </div>
-
+        <div className="max-w-lg mx-auto animate-fade-up">
+          <div className="card p-8 text-center space-y-6">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+              Verification Error
+            </h1>
+            <Alert type="error">{friendly}</Alert>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button as={Link} to="/verify">
                 Try Again
@@ -411,15 +363,16 @@ const QRVerifyPage = () => {
           }}
           expiryReminder={expiryReminder || undefined}
           actions={
-            <div className="flex gap-2">
+            user?.role === 'consumer' ? (
               <Button
                 variant="secondary"
                 size="sm"
+                className="w-full sm:w-auto"
                 onClick={() => void handleSaveToInventory(product.productId)}
               >
-                Save to Inventory
+                Add to My Inventory
               </Button>
-            </div>
+            ) : undefined
           }
         />
 
@@ -577,15 +530,7 @@ const QRVerifyPage = () => {
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
               Supply Chain History
             </h3>
-            <ProductTimeline
-              history={history.map((entry) => ({
-                timestamp: formatHistoryTimestamp(entry),
-                status: entry.data.status,
-                location: entry.data.location,
-                notes: `Transaction: ${entry.txId.slice(0, 16)}...`,
-                actor: entry.data.owner,
-              }))}
-            />
+            <ProductTimeline history={history} />
           </div>
         )}
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../components/AppShell';
+import { useRolePageMeta } from '../hooks/useRolePageMeta';
 import { Alert, Button } from '../components';
 import { MetadataIncompleteBadge } from '../components/MetadataIncompleteBadge';
 import { fetchDashboardSummary } from '../api/dashboardService';
@@ -8,6 +9,7 @@ import { useI18n } from '../context/I18nContext';
 import type { ManufacturerDashboardSummary } from '../types';
 
 export default function ManufacturerProductsPage() {
+  const pageMeta = useRolePageMeta('myProducts', 'manufacturer');
   const { t } = useI18n();
   const [data, setData] = useState<ManufacturerDashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,7 @@ export default function ManufacturerProductsPage() {
     : [];
 
   return (
-    <AppShell title={t('mfgProducts.title')} subtitle={t('mfgProducts.subtitle')}>
+    <AppShell title={pageMeta.title} subtitle={pageMeta.subtitle}>
       <div className="space-y-6 animate-fade-up">
         <div className="flex flex-wrap gap-3">
           <Button type="button" variant="secondary" onClick={() => void load()} disabled={loading}>

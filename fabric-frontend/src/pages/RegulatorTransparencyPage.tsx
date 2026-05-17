@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../components/AppShell';
+import { useRolePageMeta } from '../hooks/useRolePageMeta';
 import { Alert, Button } from '../components';
 import { fetchPublicHealth } from '../api/adminService';
 import { fetchRegulatorSummary } from '../api/regulatorService';
 import type { RegulatorSummary } from '../api/regulatorService';
 
 export default function RegulatorTransparencyPage() {
+  const pageMeta = useRolePageMeta('regulatorTransparency', 'regulator');
   const [summary, setSummary] = useState<RegulatorSummary | null>(null);
   const [healthTs, setHealthTs] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,10 +43,7 @@ export default function RegulatorTransparencyPage() {
   );
 
   return (
-    <AppShell
-      title="System transparency"
-      subtitle="Read-only platform and blockchain visibility for oversight"
-    >
+    <AppShell title={pageMeta.title} subtitle={pageMeta.subtitle}>
       <div className="space-y-6 animate-fade-up max-w-3xl">
         {error && <Alert type="error">{error}</Alert>}
         {loading && <p className="text-sm text-page-muted">Loading…</p>}

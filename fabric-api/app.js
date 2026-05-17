@@ -11,6 +11,8 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const organizationRoutes = require('./routes/organizationRoutes');
 const regulatorRoutes = require('./routes/regulatorRoutes');
 const userRoutes = require('./routes/userRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const feedbackRoutes = require('./routes/feedbackRoutes');
 
 const app = express();
 
@@ -50,10 +52,14 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/organization', organizationRoutes);
 app.use('/regulator', regulatorRoutes);
 app.use('/users', userRoutes);
+app.use('/notifications', notificationRoutes);
+app.use('/feedback', feedbackRoutes);
 app.use('/', productRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
   console.log(`🚀 API running on port ${PORT}`);
   console.log(`📍 LAN: http://<this-pc-ip>:${PORT}  |  localhost:${PORT}`);
+  console.log(`🔗 QR verify links use FRONTEND_URL: ${frontendUrl}`);
 });

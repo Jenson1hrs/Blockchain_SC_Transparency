@@ -1,5 +1,6 @@
 const connectToNetwork = require('../config/fabric');
 const dbService = require('./dbService');
+const productStatusService = require('./productStatusService');
 const pool = require('../config/db');
 
 async function syncProductToDb(product, data) {
@@ -154,7 +155,14 @@ async function getProduct(id) {
 
     // 🔴 ALWAYS TRY DB FIRST (FAST CACHE)
     const dbProduct = await dbService.getProductFromDB(id);
-    if (dbProduct) return dbService.mapProductToApi(dbProduct);
+    if (dbProduct) {
+        const reconciled = productStatusService.reconcileDisplayStatus(dbProduct);
+        if (reconciled && reconciled !== dbProduct.status) {
+            await productStatusService.updateProductStatus(id, reconciled);
+            dbProduct.status = reconciled;
+        }
+        return dbService.mapProductToApi(dbProduct);
+    }
 
     // 🔴 FALLBACK TO BLOCKCHAIN
     const { gateway, contract } = await connectToNetwork();
@@ -199,13 +207,13 @@ async function transferProduct(id, newOwner) {
         const result = await contract.submitTransaction('transferProduct', id, newOwner);
         const product = JSON.parse(result.toString());
 
-        // 🔴 SYNC DB
+        // Sync chain owner/timestamp only — app-level status lives in PostgreSQL (productStatusService).
         try {
             await pool.query(
                 `UPDATE products 
-                 SET owner = $1, status = $2, timestamp = $3 
-                 WHERE product_id = $4`,
-                [product.owner, product.status, product.timestamp, id]
+                 SET owner = $1, timestamp = $2 
+                 WHERE product_id = $3`,
+                [product.owner, product.timestamp, id]
             );
         } catch (dbError) {
             console.error("⚠️ DB sync failed:", dbError.message);

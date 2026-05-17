@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/productController');
+const transferController = require('../controllers/transferRequestController');
 const { authenticateUser, authorizeRoles } = require('../middleware/authMiddleware');
+
+const MOVE_ROLES = ['manufacturer', 'distributor', 'retailer'];
+const OVERSIGHT_ROLES = ['admin', 'regulator'];
 
 // Routes
 router.post(
@@ -18,11 +22,52 @@ router.get(
   controller.listAssignedProducts
 );
 router.get('/product/:id', controller.getProduct);
-router.get('/expiring', controller.getExpiringProducts);
+router.get(
+  '/expiring',
+  authenticateUser,
+  controller.getExpiringProducts
+);
+router.post(
+  '/transfer/request',
+  authenticateUser,
+  authorizeRoles(...MOVE_ROLES),
+  transferController.createRequest
+);
+router.get(
+  '/transfer/requests/incoming',
+  authenticateUser,
+  authorizeRoles(...MOVE_ROLES),
+  transferController.listIncoming
+);
+router.get(
+  '/transfer/requests/outgoing',
+  authenticateUser,
+  authorizeRoles(...MOVE_ROLES),
+  transferController.listOutgoing
+);
+router.get(
+  '/transfer/requests',
+  authenticateUser,
+  authorizeRoles(...OVERSIGHT_ROLES),
+  transferController.listAll
+);
+router.patch(
+  '/transfer/requests/:id/accept',
+  authenticateUser,
+  authorizeRoles(...MOVE_ROLES),
+  transferController.acceptRequest
+);
+router.patch(
+  '/transfer/requests/:id/reject',
+  authenticateUser,
+  authorizeRoles(...MOVE_ROLES),
+  transferController.rejectRequest
+);
+/** Legacy immediate transfer — admin/testing only; normal UI uses /transfer/request */
 router.post(
   '/transfer',
   authenticateUser,
-  authorizeRoles('manufacturer', 'distributor', 'retailer', 'admin'),
+  authorizeRoles('admin'),
   controller.transferProduct
 );
 router.post(

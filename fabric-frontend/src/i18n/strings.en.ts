@@ -11,12 +11,19 @@ export const STRINGS_EN: Record<string, string> = {
   'nav.login': 'Login',
   'nav.register': 'Register',
   'nav.create': 'Create',
-  'nav.transfer': 'Transfer',
-  'nav.location': 'Location',
+  'nav.transfer': 'Request Transfer',
+  'nav.requestTransfer': 'Request Transfer',
+  'nav.transfers': 'Transfers',
+  'nav.incomingTransfers': 'Incoming Transfers',
+  'nav.location': 'Update Location',
+  'nav.updateStoreLocation': 'Update Store Location',
   'nav.expiring': 'Expiring Soon',
   'nav.myProducts': 'My registered products',
   'nav.assignedProducts': 'Assigned Products',
+  'nav.retailStock': 'Retail Stock',
   'nav.inventory': 'Inventory',
+  'nav.myInventory': 'My Inventory',
+  'nav.notifications': 'Notifications',
   'nav.regulatorOrgs': 'Organizations',
   'nav.regulatorProducts': 'Products',
   'nav.regulatorTransparency': 'Transparency',
@@ -131,9 +138,6 @@ export const STRINGS_EN: Record<string, string> = {
     'Shortcuts reflect what you can do as a consumer. Anything not listed is restricted by your role or hidden in the menu.',
   'workspace.footerDistributor':
     'Transfers and location updates are recorded for traceability. Use Verify anytime to confirm a product’s history.',
-  'workspace.footerRetailer':
-    'Use shortcuts below for receiving, verification, and location updates. Your menu only shows actions your retailer account is allowed to perform.',
-
   // Dashboard (/home) cards — English defaults; other locales override by key in `strings.<locale>.ts`.
   'dash.admin.users.t': 'Manage Users',
   'dash.admin.users.d': 'View accounts, roles, and language preferences.',
@@ -160,13 +164,14 @@ export const STRINGS_EN: Record<string, string> = {
     'Regulator — oversee organization verification and product metadata quality. Cannot create or transfer products.',
   'profile.workspaceNote.regulator':
     'Use Organizations and Products in the menu to approve entities and review flagged items.',
-  'dash.mfg.create.t': 'Create Product',
-  'dash.mfg.create.d': 'Register on the ledger, upload metadata, and generate a QR code.',
-  'dash.mfg.products.t': 'My registered products',
+  'dash.mfg.create.t': 'Register product',
+  'dash.mfg.create.d': 'Anchor authenticity on the ledger and generate a traceable QR code.',
+  'dash.mfg.products.t': 'My products',
   'dash.mfg.products.d':
-    'Products you registered on this manufacturer account — status counts and metadata completion (not matched by company name alone).',
-  'dash.mfg.trace.t': 'Verify & Trace',
-  'dash.mfg.trace.d': 'Look up any product — authenticity, metadata, QR, and chain history in one place.',
+    'View registered items, metadata completeness, and readiness for outbound custody.',
+  'dash.mfg.trace.t': 'Verify & trace',
+  'dash.mfg.trace.d':
+    'Inspect authenticity, metadata, and full custody history for any product ID.',
   'dash.mfg.profile.t': 'Profile & Settings',
   'dash.mfg.profile.d': 'Account details and preferences.',
   'mfgProducts.title': 'My registered products',
@@ -186,42 +191,50 @@ export const STRINGS_EN: Record<string, string> = {
 
   'assignedProducts.titleDistributor': 'Assigned Products',
   'assignedProducts.subtitleDistributor': 'Products currently assigned to your distributor account',
-  'assignedProducts.titleRetailer': 'Assigned Products',
-  'assignedProducts.subtitleRetailer': 'Products currently assigned to your retailer account',
+  'assignedProducts.titleRetailer': 'Retail Stock',
+  'assignedProducts.subtitleRetailer': 'Products in your store’s blockchain custody',
+  'retailStock.subtitle': 'Products held in your retail organization’s on-chain custody',
+  'retailStock.empty': 'No products in retail stock yet. Accept an incoming transfer to add items.',
+  'retailStock.count': '{count} product(s) in retail stock',
   'assignedProducts.empty': 'No products are assigned to your organization yet.',
   'assignedProducts.count': '{count} product(s) assigned to you',
 
-  'dash.distributor.transfer.t': 'Shipment transfer',
+  'dash.mfg.transfer.t': 'Request transfer',
+  'dash.mfg.transfer.d':
+    'Send custody requests to distributor partners. Ownership updates after they accept.',
+  'dash.distributor.inbound.t': 'Incoming transfers',
+  'dash.distributor.inbound.d': 'Review and accept manufacturer shipment offers.',
+  'dash.distributor.transfer.t': 'Request transfer',
   'dash.distributor.transfer.d':
-    'Transfer ownership to the next logistics or retail partner (warehouse handoff).',
+    'Forward custody to retailer partners after you hold the product.',
   'dash.distributor.location.t': 'Warehouse & distribution locations',
   'dash.distributor.location.d':
     'Update docks, warehouses, hubs, or checkpoints along the distribution route.',
   'dash.distributor.verify.t': 'Verify product',
   'dash.distributor.verify.d':
-    'Confirm authenticity during inbound and outbound handling.',
+    'Confirm authenticity and trace shipments and custody during inbound and outbound handling.',
   'dash.distributor.history.t': 'Supply chain history',
   'dash.distributor.history.d':
     'Full timeline from manufacture—trace shipments and custody changes.',
 
-  'dash.retailer.transfer.t': 'Receiving & ownership handoff',
-  'dash.retailer.transfer.d':
-    'Record transfers when goods arrive at store or move between retail locations.',
+  'dash.retailer.inbound.t': 'Incoming transfers',
+  'dash.retailer.inbound.d':
+    'Review distributor offers and accept products into retail custody.',
+  'dash.retailer.expiring.t': 'Expiring soon',
+  'dash.retailer.expiring.d': 'Monitor store stock approaching expiry within seven days.',
+  'dash.notifications.d': 'Transfers, inventory, compliance, and safety alerts for your account.',
   'dash.retailer.location.t': 'Store & shelf location',
   'dash.retailer.location.d':
-    'Update aisle, backroom, or sales-floor locations for staff and audits.',
+    'Record aisle, backroom, or sales-floor locations for staff visibility and audits.',
   'dash.retailer.verify.t': 'Verify before sale',
   'dash.retailer.verify.d':
-    'Confirm authenticity before displaying or selling to customers.',
-  'dash.retailer.history.t': 'Product journey',
-  'dash.retailer.history.d':
-    'Review chain history on the verify screen after lookup.',
+    'Confirm authenticity and traceability before products reach consumers.',
 
-  'dash.cons.verify.t': 'Verify Product',
-  'dash.cons.verify.d': 'Verify product authenticity before purchase.',
-  'dash.cons.inventory.t': 'My Inventory',
-  'dash.cons.inventory.d': 'Saved products from scans.',
-  'dash.cons.expiring.t': 'Expiring Soon',
+  'dash.cons.verify.t': 'Verify product',
+  'dash.cons.verify.d': 'Confirm authenticity and review transparent supply-chain history.',
+  'dash.cons.inventory.t': 'My inventory',
+  'dash.cons.inventory.d': 'Personal saved products with expiry and dietary safety reminders.',
+  'dash.cons.expiring.t': 'Expiry alerts',
   'dash.cons.expiring.d': 'Countdown alerts for expiry.',
   'dash.cons.profile.t': 'Profile / Preferences',
   'dash.cons.profile.d': 'Language, dietary, and allergy preferences.',
@@ -273,6 +286,8 @@ export const STRINGS_EN: Record<string, string> = {
   'auth.regPreferences': 'Preferences',
   'auth.passwordCreatePh': 'Create a secure password',
   'auth.passwordHelper': 'At least 6 characters',
+  'auth.privilegedRoleNote':
+    'Admin and regulator accounts are assigned by the platform owner.',
   'auth.roleWarning':
     'For prototype testing only. In real deployment, roles are approved by an administrator.',
   'auth.haveAccount': 'Already have an account?',
@@ -280,15 +295,15 @@ export const STRINGS_EN: Record<string, string> = {
   'auth.regLanguageHint': 'Selected: {{label}} ({{code}})',
 
   // Landing — nav & hero
-  'landing.brand': 'BlockChain Supply',
-  'landing.tagline': 'Anti-counterfeit supply chain',
+  'landing.brand': 'VeriChain',
+  'landing.tagline': 'Secure product traceability powered by blockchain',
   'landing.signIn': 'Sign in',
   'landing.getStarted': 'Get Started',
   'landing.welcomeUser': 'Welcome, {{name}}',
-  'landing.heroLine1': 'Blockchain-powered anti-counterfeit',
-  'landing.heroLine2': 'supply chain protection',
+  'landing.heroLine1': 'Verify product authenticity',
+  'landing.heroLine2': 'across the supply chain',
   'landing.heroSub':
-    'Verify products instantly, trace every movement, and keep expiry workflow predictable with premium blockchain transparency.',
+    'Trace custody from factory to shelf. Scan QR codes, manage expiry, and build trust with shared records.',
   'landing.ctaVerify': '🚀 Verify Product',
   'landing.ctaAccount': 'Create Account',
   'landing.cardScanTitle': 'Scan & Verify',
@@ -302,9 +317,9 @@ export const STRINGS_EN: Record<string, string> = {
   'landing.featuresSub':
     'Comprehensive blockchain-powered solution for manufacturers, distributors, retailers, and consumers',
 
-  'landing.feat1t': 'Blockchain Security',
+  'landing.feat1t': 'Trusted records',
   'landing.feat1x':
-    'Tamper-resistant ledger ensures product authenticity and supply chain integrity',
+    'Key custody events stay on blockchain so partners can rely on the audit trail',
   'landing.feat2t': 'QR Verification',
   'landing.feat2x':
     'Instant verification with route-safe deep links and mobile-optimized QR codes',
@@ -375,7 +390,7 @@ export const STRINGS_EN: Record<string, string> = {
   'landing.ctaTry': 'Try Verification',
 
   'landing.footerBlurb':
-    'Revolutionizing supply chain transparency with blockchain technology. Ensuring authenticity, traceability, and consumer trust.',
+    'Enhancing supply-chain transparency, counterfeit prevention, and consumer trust.',
   'landing.footerPlatform': 'Platform',
   'landing.footerCompany': 'Company',
   'landing.footerVerify': 'Verify Product',
@@ -385,9 +400,9 @@ export const STRINGS_EN: Record<string, string> = {
   'landing.footerSignIn': 'Sign In',
   'landing.footerRegister': 'Register',
   'landing.footerProfile': 'Profile',
-  'landing.footerFyp': 'Final Year Project',
+  'landing.footerFyp': '',
   'landing.footerCopy':
-    '© 2024 BlockChain Supply. Final Year Project Demo. Built with blockchain technology.',
+    '© 2026 VeriChain. Secure Product Traceability Powered by Blockchain.',
 
   'landing.langLabel': 'Language',
 };

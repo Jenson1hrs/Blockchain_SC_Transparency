@@ -89,7 +89,8 @@ export const STRINGS_VI: Record<string, string> = {
   'dash.distributor.location.t': 'Vị trí kho & phân phối',
   'dash.distributor.location.d': 'Cập nhật bến, kho, hub hoặc điểm kiểm trên tuyến.',
   'dash.distributor.verify.t': 'Xác minh sản phẩm',
-  'dash.distributor.verify.d': 'Xác nhận tính xác thực khi nhập/xuất.',
+  'dash.distributor.verify.d':
+    'Xác nhận tính xác thực và theo dõi lô hàng, quyền sở hữu khi nhập/xuất.',
   'dash.distributor.history.t': 'Lịch sử chuỗi cung ứng',
   'dash.distributor.history.d':
     'Dòng thời gian đầy đủ—theo dõi lô hàng và thay đổi quyền sở hữu.',
@@ -160,7 +161,7 @@ export const STRINGS_VI: Record<string, string> = {
   'auth.signInHere': 'Đăng nhập tại đây',
   'auth.regLanguageHint': 'Đã chọn: {{label}} ({{code}})',
 
-  'landing.brand': 'BlockChain Supply',
+  'landing.brand': 'VeriChain',
   'landing.tagline': 'Chuỗi cung ứng chống hàng giả',
   'landing.signIn': 'Đăng nhập',
   'landing.getStarted': 'Bắt đầu',
@@ -259,9 +260,9 @@ export const STRINGS_VI: Record<string, string> = {
   'landing.footerSignIn': 'Đăng nhập',
   'landing.footerRegister': 'Đăng ký',
   'landing.footerProfile': 'Hồ sơ',
-  'landing.footerFyp': 'Đồ án tốt nghiệp',
+  'landing.footerFyp': '',
   'landing.footerCopy':
-    '© 2024 BlockChain Supply. Bản demo đồ án tốt nghiệp. Xây dựng với công nghệ blockchain.',
+    '© 2026 VeriChain. Secure Product Traceability Powered by Blockchain.',
 
   'landing.langLabel': 'Ngôn ngữ',
 };

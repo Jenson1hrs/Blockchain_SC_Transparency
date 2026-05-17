@@ -2,6 +2,8 @@ const pool = require('../config/db');
 const organizationService = require('./organizationService');
 
 const ROLES = ['admin', 'manufacturer', 'distributor', 'retailer', 'consumer', 'regulator'];
+/** Roles allowed via public POST /auth/register (admin/regulator are seeded separately). */
+const PUBLIC_REGISTRATION_ROLES = ['consumer', 'manufacturer', 'distributor', 'retailer'];
 const SUPPLY_CHAIN_ROLES = ['manufacturer', 'distributor', 'retailer'];
 
 async function ensureUsersTable() {
@@ -209,8 +211,14 @@ async function listAllUsers() {
   }));
 }
 
+function isPublicRegistrationRole(role) {
+  return PUBLIC_REGISTRATION_ROLES.includes(role);
+}
+
 module.exports = {
   ROLES,
+  PUBLIC_REGISTRATION_ROLES,
+  isPublicRegistrationRole,
   SUPPLY_CHAIN_ROLES,
   ensureUsersTable,
   rowToPublicUser,

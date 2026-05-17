@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const userService = require('../services/userService');
+const notificationTriggers = require('../services/notificationTriggers');
 const { getJwtSecret } = require('../middleware/authMiddleware');
 
 const BCRYPT_ROUNDS = 10;
@@ -45,6 +46,12 @@ exports.register = async (req, res) => {
     if (!role || !userService.isValidRole(role)) {
       return res.status(400).json({ success: false, message: 'Invalid or missing role' });
     }
+    if (!userService.isPublicRegistrationRole(role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'This role requires platform approval and cannot be self-registered.',
+      });
+    }
 
     const existing = await userService.findUserByEmail(String(email).trim());
     if (existing) {
@@ -68,6 +75,10 @@ exports.register = async (req, res) => {
           : null,
       preferredLanguage: preferredLanguage != null ? String(preferredLanguage) : 'en',
     });
+
+    void notificationTriggers
+      .onUserRegistered(String(name).trim(), String(email).trim(), role)
+      .catch(() => {});
 
     return res.status(201).json({
       success: true,

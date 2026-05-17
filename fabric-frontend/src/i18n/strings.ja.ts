@@ -90,7 +90,8 @@ export const STRINGS_JA: Record<string, string> = {
   'dash.distributor.location.t': '倉庫・流通拠点',
   'dash.distributor.location.d': 'ドック、倉庫、ハブ、チェックポイントを更新。',
   'dash.distributor.verify.t': '製品を検証',
-  'dash.distributor.verify.d': '入出庫時に真正性を確認。',
+  'dash.distributor.verify.d':
+    '入出庫時に真正性を確認し、出荷と保管の変化を追跡します。',
   'dash.distributor.history.t': 'サプライチェーン履歴',
   'dash.distributor.history.d':
     '製造からのタイムライン—出荷と保管の変化を追跡。',
@@ -161,7 +162,7 @@ export const STRINGS_JA: Record<string, string> = {
   'auth.signInHere': 'こちらからログイン',
   'auth.regLanguageHint': '選択：{{label}}（{{code}}）',
 
-  'landing.brand': 'BlockChain Supply',
+  'landing.brand': 'VeriChain',
   'landing.tagline': '偽造対策サプライチェーン',
   'landing.signIn': 'ログイン',
   'landing.getStarted': '始める',
@@ -257,9 +258,9 @@ export const STRINGS_JA: Record<string, string> = {
   'landing.footerSignIn': 'ログイン',
   'landing.footerRegister': '登録',
   'landing.footerProfile': 'プロフィール',
-  'landing.footerFyp': '卒業研究',
+  'landing.footerFyp': '',
   'landing.footerCopy':
-    '© 2024 BlockChain Supply. 卒業研究デモ。ブロックチェーン技術で構築。',
+    '© 2026 VeriChain. Secure Product Traceability Powered by Blockchain.',
 
   'landing.langLabel': '言語',
 };

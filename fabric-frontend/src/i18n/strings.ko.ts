@@ -89,7 +89,8 @@ export const STRINGS_KO: Record<string, string> = {
   'dash.distributor.location.t': '창고·유통 위치',
   'dash.distributor.location.d': '도크, 창고, 허브, 검문소를 업데이트합니다.',
   'dash.distributor.verify.t': '제품 검증',
-  'dash.distributor.verify.d': '입·출고 시 진위를 확인합니다.',
+  'dash.distributor.verify.d':
+    '입·출고 시 진위를 확인하고 출하와 보관 변화를 추적합니다.',
   'dash.distributor.history.t': '공급망 이력',
   'dash.distributor.history.d':
     '제조부터의 타임라인—출하와 보관 변화를 추적합니다.',
@@ -160,7 +161,7 @@ export const STRINGS_KO: Record<string, string> = {
   'auth.signInHere': '여기에서 로그인',
   'auth.regLanguageHint': '선택: {{label}} ({{code}})',
 
-  'landing.brand': 'BlockChain Supply',
+  'landing.brand': 'VeriChain',
   'landing.tagline': '위조 방지 공급망',
   'landing.signIn': '로그인',
   'landing.getStarted': '시작하기',
@@ -256,9 +257,9 @@ export const STRINGS_KO: Record<string, string> = {
   'landing.footerSignIn': '로그인',
   'landing.footerRegister': '가입',
   'landing.footerProfile': '프로필',
-  'landing.footerFyp': '졸업 프로젝트',
+  'landing.footerFyp': '',
   'landing.footerCopy':
-    '© 2024 BlockChain Supply. 졸업 프로젝트 데모. 블록체인 기술로 구축.',
+    '© 2026 VeriChain. Secure Product Traceability Powered by Blockchain.',
 
   'landing.langLabel': '언어',
 };

@@ -90,7 +90,8 @@ export const STRINGS_TA: Record<string, string> = {
   'dash.distributor.location.t': 'கிடங்கு மற்றும் விநியோக இடங்கள்',
   'dash.distributor.location.d': 'முனையங்கள், கிடங்குகள், மையங்கள் அல்லது சோதனைச் சாவடிகளைப் புதுப்பி.',
   'dash.distributor.verify.t': 'தயாரிப்பை சரிபார்',
-  'dash.distributor.verify.d': 'உள்வருதல் / வெளியேற்றத்தில் அசல்மையை உறுதிப்படுத்து.',
+  'dash.distributor.verify.d':
+    'உள்வருதல்/வெளியேற்றத்தில் அசல்மையை உறுதிசெய்து ஏற்றுமதி மற்றும் உரிமை மாற்றங்களை கண்காணிக்கவும்.',
   'dash.distributor.history.t': 'விநியோக சங்கிலி வரலாறு',
   'dash.distributor.history.d': 'தயாரிப்பிலிருந்து முழு காலவரிசை—ஏற்றுமதி மற்றும் உரிமை மாற்றங்கள்.',
 
@@ -160,7 +161,7 @@ export const STRINGS_TA: Record<string, string> = {
   'auth.signInHere': 'இங்கே உள்நுழை',
   'auth.regLanguageHint': 'தேர்ந்தெடுப்பு: {{label}} ({{code}})',
 
-  'landing.brand': 'BlockChain Supply',
+  'landing.brand': 'VeriChain',
   'landing.tagline': 'கள்ளத்தனம் தடுப்பு விநியோக சங்கிலி',
   'landing.signIn': 'உள்நுழை',
   'landing.getStarted': 'தொடங்கு',
@@ -259,9 +260,9 @@ export const STRINGS_TA: Record<string, string> = {
   'landing.footerSignIn': 'உள்நுழை',
   'landing.footerRegister': 'பதிவு',
   'landing.footerProfile': 'சுயவிவரம்',
-  'landing.footerFyp': 'இறுதி ஆண்டு திட்டம்',
+  'landing.footerFyp': '',
   'landing.footerCopy':
-    '© 2024 BlockChain Supply. இறுதி ஆண்டு திட்ட செயல்முறை. பிளாக்செயின் தொழில்நுட்பத்துடன் கட்டப்பட்டது.',
+    '© 2026 VeriChain. Secure Product Traceability Powered by Blockchain.',
 
   'landing.langLabel': 'மொழி',
 };

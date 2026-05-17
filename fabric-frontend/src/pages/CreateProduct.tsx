@@ -2,10 +2,15 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createProduct } from '../api/productService';
 import AppShell from '../components/AppShell';
+import { useRolePageMeta } from '../hooks/useRolePageMeta';
 import { useAuth } from '../context/AuthContext';
 import type { Product } from '../types';
+import { QR_URL_HELPER_TEXT, verifyRouteFromQrUrl } from '../utils/verifyQrUrl';
+import { Alert } from '../components/Alert';
+import { friendlyCreateError } from '../utils/friendlyErrors';
 
 const CreateProduct = () => {
+  const pageMeta = useRolePageMeta('create', 'manufacturer');
   const { user } = useAuth();
   const isManufacturer = user?.role === 'manufacturer';
   const registeredAs =
@@ -85,14 +90,15 @@ const CreateProduct = () => {
       });
       setImagePreview(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Create failed');
+      const raw = err instanceof Error ? err.message : 'Create failed';
+      setError(friendlyCreateError(raw));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AppShell title="Create Product" subtitle="Register a product on blockchain and generate QR.">
+    <AppShell title={pageMeta.title} subtitle={pageMeta.subtitle}>
       <div className="max-w-2xl mx-auto">
         <form
           onSubmit={submit}
@@ -188,11 +194,7 @@ const CreateProduct = () => {
               />
             </div>
           ))}
-          {error && (
-            <pre className="text-xs text-red-800 bg-red-50 p-3 rounded-lg border border-red-200 whitespace-pre-wrap font-sans overflow-x-auto">
-              {error}
-            </pre>
-          )}
+          {error && <Alert type="error">{error}</Alert>}
           {success && (
             <div className="text-sm text-green-700 bg-green-50 p-3 rounded-lg border border-green-200">
               {success}
@@ -259,18 +261,19 @@ const CreateProduct = () => {
 
               <div>
                 <p className="text-sm text-gray-600 dark:text-neutral-200 mb-2">Verification URL</p>
+                <p className="text-xs text-page-muted mb-2 leading-relaxed">{QR_URL_HELPER_TEXT}</p>
                 {(result.qrRaw.includes('localhost') ||
                   result.qrRaw.includes('127.0.0.1')) && (
                   <div className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
                     <strong>Phones / other devices</strong> cannot open{' '}
-                    <code className="bg-amber-100 px-1">localhost</code>. Set environment variable{' '}
-                    <code className="bg-amber-100 px-1">FRONTEND_URL=http://&lt;your-laptop-LAN-IP&gt;:5173</code>{' '}
-                    when starting <strong>fabric-api</strong>, then create the product again so the QR
-                    encodes your LAN URL.
+                    <code className="bg-amber-100 px-1 dark:bg-amber-900/50">localhost</code>. Set{' '}
+                    <code className="bg-amber-100 px-1 dark:bg-amber-900/50">FRONTEND_URL</code> on{' '}
+                    <strong>fabric-api</strong> to your LAN IP, restart the API, then create the product
+                    again.
                   </div>
                 )}
                 <div className="flex gap-2 flex-wrap items-center">
-                  <code className="text-xs bg-gray-100 px-2 py-1 rounded break-all flex-1 min-w-0">
+                  <code className="text-xs bg-gray-100 dark:bg-neutral-800 px-2 py-1 rounded break-all flex-1 min-w-0">
                     {result.qrRaw}
                   </code>
                   <button
@@ -296,11 +299,8 @@ const CreateProduct = () => {
 
               <div className="text-center">
                 <Link
-                  to={(() => {
-                    const u = new URL(result.qrRaw);
-                    return `${u.pathname}${u.search}`;
-                  })()}
-                  className="text-blue-600 hover:underline text-sm"
+                  to={verifyRouteFromQrUrl(result.qrRaw)}
+                  className="text-blue-600 hover:underline text-sm dark:text-primary-400"
                 >
                   Open verify page →
                 </Link>

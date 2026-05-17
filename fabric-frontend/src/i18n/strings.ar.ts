@@ -89,7 +89,8 @@ export const STRINGS_AR: Record<string, string> = {
   'dash.distributor.location.t': 'مواقع المستودع والتوزيع',
   'dash.distributor.location.d': 'حدّث الأرصفة والمستودعات والمحاور أو نقاط التفتيش.',
   'dash.distributor.verify.t': 'التحقق من المنتج',
-  'dash.distributor.verify.d': 'أكد الأصالة أثناء الاستلام والصرف.',
+  'dash.distributor.verify.d':
+    'أكد الأصالة وتتبع الشحنات وتغيرات الحيازة أثناء الاستلام والصرف.',
   'dash.distributor.history.t': 'سجل سلسلة التوريد',
   'dash.distributor.history.d': 'خط زمني كامل—تتبع الشحنات وتغيرات الحيازة.',
 
@@ -159,7 +160,7 @@ export const STRINGS_AR: Record<string, string> = {
   'auth.signInHere': 'سجّل الدخول هنا',
   'auth.regLanguageHint': 'المحدد: {{label}} ({{code}})',
 
-  'landing.brand': 'BlockChain Supply',
+  'landing.brand': 'VeriChain',
   'landing.tagline': 'سلسلة توريد مضادة للتزييف',
   'landing.signIn': 'تسجيل الدخول',
   'landing.getStarted': 'ابدأ',
@@ -255,9 +256,9 @@ export const STRINGS_AR: Record<string, string> = {
   'landing.footerSignIn': 'تسجيل الدخول',
   'landing.footerRegister': 'التسجيل',
   'landing.footerProfile': 'الملف الشخصي',
-  'landing.footerFyp': 'مشروع التخرج',
+  'landing.footerFyp': '',
   'landing.footerCopy':
-    '© 2024 BlockChain Supply. عرض مشروع تخرج. مبني بتقنية البلوك تشين.',
+    '© 2026 VeriChain. Secure Product Traceability Powered by Blockchain.',
 
   'landing.langLabel': 'اللغة',
 };

@@ -88,7 +88,7 @@ export const STRINGS_ZH: Record<string, string> = {
   'dash.distributor.location.t': '仓库与分销节点位置',
   'dash.distributor.location.d': '更新码头、仓库、枢纽或配送路线上的检查点。',
   'dash.distributor.verify.t': '验证产品',
-  'dash.distributor.verify.d': '在入库与出库环节确认真伪。',
+  'dash.distributor.verify.d': '在入库与出库环节确认真伪并追溯货运与保管变更。',
   'dash.distributor.history.t': '供应链历史',
   'dash.distributor.history.d': '从生产起的完整时间线—追溯货运与保管变更。',
 
@@ -157,7 +157,7 @@ export const STRINGS_ZH: Record<string, string> = {
   'auth.signInHere': '在此登录',
   'auth.regLanguageHint': '已选择：{{label}}（{{code}}）',
 
-  'landing.brand': 'BlockChain Supply',
+  'landing.brand': 'VeriChain',
   'landing.tagline': '防伪供应链',
   'landing.signIn': '登录',
   'landing.getStarted': '开始使用',
@@ -251,9 +251,9 @@ export const STRINGS_ZH: Record<string, string> = {
   'landing.footerSignIn': '登录',
   'landing.footerRegister': '注册',
   'landing.footerProfile': '个人资料',
-  'landing.footerFyp': '毕业设计项目',
+  'landing.footerFyp': '',
   'landing.footerCopy':
-    '© 2024 BlockChain Supply。毕业设计演示。基于区块链技术构建。',
+    '© 2026 VeriChain. Secure Product Traceability Powered by Blockchain.',
 
   'landing.langLabel': '语言',
 };

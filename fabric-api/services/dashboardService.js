@@ -9,8 +9,68 @@ const {
 } = require('./systemHealthService');
 const regulatorService = require('./regulatorService');
 const ownershipService = require('./ownershipService');
+const transferRequestService = require('./transferRequestService');
 
 const EXPIRING_SOON_DAYS = 7;
+
+function userIdParam(userId) {
+  const id = userId != null ? Number(userId) : NaN;
+  return Number.isFinite(id) ? id : null;
+}
+
+function heldProductsClause(userId) {
+  const id = userIdParam(userId);
+  if (id == null) return { sql: '1=0', params: [] };
+  return { sql: 'current_owner_user_id = $1', params: [id] };
+}
+
+async function ensureDashboardTables() {
+  await ensureProductAnalyticsColumns();
+  await ownershipService.ensureOwnershipColumns();
+  await transferRequestService.ensureTransferRequestsTable();
+}
+
+async function countTransferByDirection(userId, direction, status) {
+  const id = userIdParam(userId);
+  if (id == null) return 0;
+  const col = direction === 'inbound' ? 'to_user_id' : 'from_user_id';
+  const res = await pool.query(
+    `SELECT COUNT(*)::int AS c FROM transfer_requests WHERE ${col} = $1 AND status = $2`,
+    [id, status]
+  );
+  return res.rows[0].c;
+}
+
+function mapTransferRequestSummary(row) {
+  return {
+    id: row.id,
+    productId: row.product_id,
+    productName: row.product_name ?? null,
+    fromOrgName: row.from_org_name,
+    toOrgName: row.to_org_name,
+    status: row.status,
+    message: row.message ?? null,
+    rejectionReason: row.rejection_reason ?? null,
+    createdAt: row.created_at,
+    respondedAt: row.responded_at ?? null,
+  };
+}
+
+async function recentTransferRequests(userId, direction, limit = 5) {
+  const id = userIdParam(userId);
+  if (id == null) return [];
+  const col = direction === 'inbound' ? 'to_user_id' : 'from_user_id';
+  const res = await pool.query(
+    `SELECT tr.*, p.name AS product_name
+     FROM transfer_requests tr
+     LEFT JOIN products p ON p.product_id = tr.product_id
+     WHERE tr.${col} = $1
+     ORDER BY tr.created_at DESC
+     LIMIT $2`,
+    [id, limit]
+  );
+  return res.rows.map(mapTransferRequestSummary);
+}
 
 /**
  * Ensure columns used by dashboard analytics exist (mirrors dbService insert patterns).
@@ -47,6 +107,21 @@ function manufacturerScopedWhereClause(manufacturerUserId) {
 }
 
 /** Quick substring match for user's allergy terms vs product text (prototype; not medical-grade). */
+function matchesDietaryConflict(dietaryPreference, ingredientsText, halalStatus) {
+  const dietary = dietaryPreference != null ? String(dietaryPreference).trim().toLowerCase() : '';
+  if (!dietary || !ingredientsText) return false;
+  const hay = String(ingredientsText).toLowerCase();
+  const meatTerms = ['meat', 'beef', 'chicken', 'pork', 'fish', 'gelatin'];
+  if (dietary === 'vegetarian' || dietary === 'vegan') {
+    if (meatTerms.some((t) => hay.includes(t))) return true;
+  }
+  if (dietary === 'halal' && halalStatus) {
+    const h = String(halalStatus).toLowerCase();
+    if (h && !h.includes('halal')) return true;
+  }
+  return false;
+}
+
 function matchesUserAllergies(allergiesText, ingredientsText, allergyInfoText) {
   if (!allergiesText || String(allergiesText).trim() === '') return false;
   const terms = String(allergiesText)
@@ -129,14 +204,33 @@ function mapProductRow(row) {
 }
 
 async function getManufacturerSummary(manufacturerUserId) {
-  await ensureProductAnalyticsColumns();
+  await ensureDashboardTables();
   const where = manufacturerScopedWhereClause(manufacturerUserId);
+  const uid = userIdParam(manufacturerUserId);
 
   const totalRes = await pool.query(
     `SELECT COUNT(*)::int AS c FROM products WHERE ${where.sql}`,
     where.params
   );
-  const totalProducts = totalRes.rows[0].c;
+  const productsCreatedCount = totalRes.rows[0].c;
+  const totalProducts = productsCreatedCount;
+
+  let productsStillInCustodyCount = 0;
+  if (uid != null) {
+    const custodyRes = await pool.query(
+      `SELECT COUNT(*)::int AS c FROM products WHERE current_owner_user_id = $1`,
+      [uid]
+    );
+    productsStillInCustodyCount = custodyRes.rows[0].c;
+  }
+
+  const [outboundPendingCount, outboundAcceptedCount, outboundRejectedCount] =
+    await Promise.all([
+      countTransferByDirection(uid, 'outbound', 'pending'),
+      countTransferByDirection(uid, 'outbound', 'accepted'),
+      countTransferByDirection(uid, 'outbound', 'rejected'),
+    ]);
+  const recentOutboundRequests = await recentTransferRequests(uid, 'outbound', 5);
 
   const statusRes = await pool.query(
     `SELECT status, COUNT(*)::int AS c
@@ -202,148 +296,199 @@ async function getManufacturerSummary(manufacturerUserId) {
   );
   const qrSupportedProductsCount = qrRes.rows[0].c;
 
+  const metadataCompletionPercentage = metadataCompletionPercent;
+
   return {
     totalProducts,
+    productsCreatedCount,
+    productsStillInCustodyCount,
+    outboundPendingCount,
+    outboundAcceptedCount,
+    outboundRejectedCount,
+    recentOutboundRequests,
     productsByStatus,
     recentProducts,
     missingMetadataCount,
     metadataCompletionPercent,
+    metadataCompletionPercentage,
     recentIncompleteProducts,
     qrSupportedProductsCount,
   };
 }
 
 async function getDistributorSummary(userId) {
-  await ensureProductAnalyticsColumns();
-  await ownershipService.ensureOwnershipColumns();
-  const where = ownershipService.listWhereForRole('distributor', userId);
+  await ensureDashboardTables();
+  const held = heldProductsClause(userId);
+  const uid = userIdParam(userId);
 
-  const totalRes = await pool.query(
-    `SELECT COUNT(*)::int AS c FROM products WHERE ${where.sql}`,
-    where.params
+  const heldRes = await pool.query(
+    `SELECT COUNT(*)::int AS c FROM products WHERE ${held.sql}`,
+    held.params
   );
-  const assignedProductsCount = totalRes.rows[0].c;
+  const currentlyHeldCount = heldRes.rows[0].c;
 
   const inTransitRes = await pool.query(
-    `SELECT COUNT(*)::int AS c
-     FROM products
-     WHERE ${where.sql} AND LOWER(TRIM(status)) = LOWER(TRIM($2))`,
-    [...where.params, 'In Transit']
+    `SELECT COUNT(*)::int AS c FROM products
+     WHERE ${held.sql} AND status ILIKE '%Transit%'`,
+    held.params
   );
-  const inTransitProductsCount = inTransitRes.rows[0].c;
+  const inTransitCount = inTransitRes.rows[0].c;
 
-  const recentRes = await pool.query(
-    `SELECT product_id, name, manufacturer, batch_number, location, owner, status, timestamp, expiry_date
-     FROM products
-     WHERE ${where.sql}
-     ORDER BY timestamp DESC NULLS LAST
-     LIMIT 10`,
-    where.params
-  );
-  const recentTransfersOrUpdatedProducts = recentRes.rows.map(mapProductRow);
+  const [
+    inboundPendingCount,
+    inboundAcceptedCount,
+    inboundRejectedCount,
+    outboundPendingCount,
+    outboundAcceptedCount,
+    outboundRejectedCount,
+  ] = await Promise.all([
+    countTransferByDirection(uid, 'inbound', 'pending'),
+    countTransferByDirection(uid, 'inbound', 'accepted'),
+    countTransferByDirection(uid, 'inbound', 'rejected'),
+    countTransferByDirection(uid, 'outbound', 'pending'),
+    countTransferByDirection(uid, 'outbound', 'accepted'),
+    countTransferByDirection(uid, 'outbound', 'rejected'),
+  ]);
+
+  const [recentInboundRequests, recentOutboundRequests] = await Promise.all([
+    recentTransferRequests(uid, 'inbound', 5),
+    recentTransferRequests(uid, 'outbound', 5),
+  ]);
 
   const locRes = await pool.query(
     `SELECT TRIM(location) AS location, COUNT(*)::int AS count
      FROM products
-     WHERE ${where.sql}
+     WHERE ${held.sql}
        AND location IS NOT NULL AND TRIM(location) <> ''
      GROUP BY TRIM(location)
      ORDER BY count DESC
      LIMIT 20`,
-    where.params
+    held.params
   );
   const productsByLocation = locRes.rows.map((row) => ({
     location: row.location,
     count: row.count,
   }));
 
-  const trRes = await pool.query(
-    `SELECT COALESCE(NULLIF(TRIM(status), ''), 'unknown') AS status, COUNT(*)::int AS count
-     FROM products
-     WHERE ${where.sql}
-     GROUP BY COALESCE(NULLIF(TRIM(status), ''), 'unknown')
-     ORDER BY count DESC`,
-    where.params
-  );
-  const transferRelatedStatusCount = {};
-  for (const row of trRes.rows) {
-    transferRelatedStatusCount[row.status] = row.count;
-  }
-
   return {
-    assignedProductsCount,
-    inTransitProductsCount,
-    recentTransfersOrUpdatedProducts,
+    assignedProductsCount: currentlyHeldCount,
+    currentlyHeldCount,
+    inTransitCount,
+    inTransitProductsCount: inTransitCount,
+    inboundPendingCount,
+    inboundAcceptedCount,
+    inboundRejectedCount,
+    outboundPendingCount,
+    outboundAcceptedCount,
+    outboundRejectedCount,
+    recentInboundRequests,
+    recentOutboundRequests,
     productsByLocation,
-    transferRelatedStatusCount,
+    recentTransfersOrUpdatedProducts: [],
+    transferRelatedStatusCount: {},
   };
 }
 
 async function getRetailerSummary(userId) {
-  await ensureProductAnalyticsColumns();
-  await ownershipService.ensureOwnershipColumns();
-  const where = ownershipService.listWhereForRole('retailer', userId);
+  await ensureDashboardTables();
+  const held = heldProductsClause(userId);
+  const uid = userIdParam(userId);
 
-  const totalRes = await pool.query(
-    `SELECT COUNT(*)::int AS c FROM products WHERE ${where.sql}`,
-    where.params
+  const heldRes = await pool.query(
+    `SELECT COUNT(*)::int AS c FROM products WHERE ${held.sql}`,
+    held.params
   );
-  const assignedProductsCount = totalRes.rows[0].c;
-
-  const atRetailRes = await pool.query(
-    `SELECT COUNT(*)::int AS c
-     FROM products
-     WHERE ${where.sql}
-       AND (
-         LOWER(TRIM(status)) = LOWER($2)
-         OR LOWER(location) LIKE '%retail%'
-         OR LOWER(location) LIKE '%store%'
-         OR LOWER(location) LIKE '%shop%'
-         OR LOWER(location) LIKE '%outlet%'
-       )`,
-    [...where.params, 'delivered']
-  );
-  const productsAtRetailLocationsCount = atRetailRes.rows[0].c;
+  const currentlyHeldCount = heldRes.rows[0].c;
 
   const expiringRes = await pool.query(
-    `SELECT COUNT(*)::int AS c
-     FROM products
-     WHERE ${where.sql}
+    `SELECT COUNT(*)::int AS c FROM products
+     WHERE ${held.sql}
        AND expiry_date IS NOT NULL
        AND expiry_date >= CURRENT_DATE
        AND expiry_date <= (CURRENT_DATE + ($2 * INTERVAL '1 day'))`,
-    [...where.params, EXPIRING_SOON_DAYS]
+    [...held.params, EXPIRING_SOON_DAYS]
   );
   const expiringSoonCount = expiringRes.rows[0].c;
 
-  const recentRes = await pool.query(
-    `SELECT product_id, name, manufacturer, batch_number, location, owner, status, timestamp, expiry_date
-     FROM products
-     WHERE ${where.sql}
-     ORDER BY timestamp DESC NULLS LAST
-     LIMIT 10`,
-    where.params
+  const expiredRes = await pool.query(
+    `SELECT COUNT(*)::int AS c FROM products
+     WHERE ${held.sql}
+       AND expiry_date IS NOT NULL
+       AND expiry_date < CURRENT_DATE`,
+    held.params
   );
-  const recentlyUpdatedProducts = recentRes.rows.map(mapProductRow);
+  const expiredCount = expiredRes.rows[0].c;
+
+  const readyRes = await pool.query(
+    `SELECT COUNT(*)::int AS c FROM products
+     WHERE ${held.sql}
+       AND (
+         status ILIKE 'Retail Ready'
+         OR status ILIKE 'Received by Retailer'
+         OR status ILIKE 'Delivered'
+         OR status ILIKE 'Received'
+       )`,
+    held.params
+  );
+  const readyForSaleCount = readyRes.rows[0].c;
+
+  const [inboundPendingCount, inboundAcceptedCount, inboundRejectedCount] =
+    await Promise.all([
+      countTransferByDirection(uid, 'inbound', 'pending'),
+      countTransferByDirection(uid, 'inbound', 'accepted'),
+      countTransferByDirection(uid, 'inbound', 'rejected'),
+    ]);
+
+  const recentInboundRequests = await recentTransferRequests(uid, 'inbound', 5);
 
   const statusRes = await pool.query(
     `SELECT COALESCE(NULLIF(TRIM(status), ''), 'unknown') AS status, COUNT(*)::int AS c
      FROM products
-     WHERE ${where.sql}
+     WHERE ${held.sql}
      GROUP BY COALESCE(NULLIF(TRIM(status), ''), 'unknown')`,
-    where.params
+    held.params
   );
   const productsByStatus = {};
   for (const row of statusRes.rows) {
     productsByStatus[row.status] = row.c;
   }
 
+  const heldMetaRows = await pool.query(
+    `SELECT image_url, ingredients, allergy_info, usage_instructions, halal_status, expiry_date
+     FROM products
+     WHERE ${held.sql}`,
+    held.params
+  );
+  let metadataWarningCount = 0;
+  let expiringOrExpiredWarningCount = 0;
+  for (const row of heldMetaRows.rows) {
+    if (!assessProductMetadata(row).isComplete) metadataWarningCount += 1;
+    if (row.expiry_date) {
+      const exp = new Date(row.expiry_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const expDay = new Date(exp);
+      expDay.setHours(0, 0, 0, 0);
+      const days = Math.ceil((expDay - today) / (24 * 60 * 60 * 1000));
+      if (days <= EXPIRING_SOON_DAYS) expiringOrExpiredWarningCount += 1;
+    }
+  }
+
   return {
-    assignedProductsCount,
-    productsAtRetailLocationsCount,
+    assignedProductsCount: currentlyHeldCount,
+    currentlyHeldCount,
+    inboundPendingCount,
+    inboundAcceptedCount,
+    inboundRejectedCount,
     expiringSoonCount,
-    recentlyUpdatedProducts,
+    expiredCount,
+    readyForSaleCount,
+    recentInboundRequests,
     productsByStatus,
+    productsAtRetailLocationsCount: currentlyHeldCount,
+    metadataWarningCount,
+    expiringOrExpiredWarningCount,
+    recentlyUpdatedProducts: [],
   };
 }
 
@@ -388,10 +533,15 @@ async function getConsumerSummary(userId, userRow) {
     [userId]
   );
   const allergiesText = userRow?.allergies ?? '';
+  const dietaryPreference = userRow?.dietary_preference ?? userRow?.dietaryPreference ?? '';
   let allergyAlertCount = 0;
+  let dietaryAlertCount = 0;
   for (const row of allergyRows.rows) {
     if (matchesUserAllergies(allergiesText, row.ingredients, row.allergy_info)) {
       allergyAlertCount += 1;
+    }
+    if (matchesDietaryConflict(dietaryPreference, row.ingredients, row.halal_status)) {
+      dietaryAlertCount += 1;
     }
   }
 
@@ -419,6 +569,8 @@ async function getConsumerSummary(userId, userRow) {
     expiringSoonCount,
     expiredCount,
     allergyAlertCount,
+    dietaryAlertCount,
+    safetyAlertCount: allergyAlertCount + dietaryAlertCount,
     recentInventoryItems,
   };
 }

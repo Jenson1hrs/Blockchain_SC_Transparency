@@ -130,17 +130,11 @@ function cardsFor(role: UserRole | null): ActionCard[] {
       },
       {
         title: 'Verify product',
-        description: 'Confirm authenticity during inbound and outbound handling.',
+        description:
+          'Confirm authenticity and trace shipments and custody during inbound and outbound handling.',
         to: '/verify',
         icon: '✅',
         color: 'success',
-      },
-      {
-        title: 'Supply chain history',
-        description: 'Trace shipments and custody from the verify screen.',
-        to: '/verify',
-        icon: '📜',
-        color: 'neutral',
       },
     ];
   }

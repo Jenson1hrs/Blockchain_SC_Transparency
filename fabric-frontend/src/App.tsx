@@ -20,6 +20,12 @@ import OrganizationProfile from './pages/OrganizationProfile';
 import OrganizationManagement from './pages/OrganizationManagement';
 import RegulatorProductsPage from './pages/RegulatorProductsPage';
 import RegulatorTransparencyPage from './pages/RegulatorTransparencyPage';
+import NotificationsPage from './pages/NotificationsPage';
+import AboutPage from './pages/AboutPage';
+import HowItWorksPage from './pages/HowItWorksPage';
+import FAQPage from './pages/FAQPage';
+import ContactPage from './pages/ContactPage';
+import FeedbackPage from './pages/FeedbackPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import type { UserRole } from './types';
 import './index.css';
@@ -27,13 +33,13 @@ import './index.css';
 const ALL_ROLES: UserRole[] = ['admin', 'manufacturer', 'distributor', 'retailer', 'consumer', 'regulator'];
 const REGULATOR_ONLY: UserRole[] = ['regulator'];
 const ADMIN_ONLY: UserRole[] = ['admin'];
-const INVENTORY_ROLES: UserRole[] = ['admin', 'consumer'];
+const INVENTORY_ROLES: UserRole[] = ['consumer'];
+const EXPIRING_ROLES: UserRole[] = ['admin', 'distributor', 'retailer', 'consumer', 'regulator'];
 const CREATE_ROLES: UserRole[] = ['admin', 'manufacturer'];
 const MANUFACTURER_ONLY: UserRole[] = ['manufacturer'];
-const MOVE_ROLES: UserRole[] = ['admin', 'manufacturer', 'distributor', 'retailer'];
+const TRANSFER_ROLES: UserRole[] = ['admin', 'manufacturer', 'distributor', 'retailer'];
+const LOCATION_ROLES: UserRole[] = ['admin', 'distributor', 'retailer'];
 const ASSIGNED_ROLES: UserRole[] = ['distributor', 'retailer'];
-const EXPIRING_ROLES: UserRole[] = ['admin', 'distributor', 'retailer', 'consumer'];
-
 function App() {
   return (
     <BrowserRouter>
@@ -69,12 +75,25 @@ function App() {
         />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/how-it-works" element={<HowItWorksPage />} />
+        <Route path="/faq" element={<FAQPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/feedback" element={<FeedbackPage />} />
 
         <Route
           path="/profile"
           element={
             <ProtectedRoute allowedRoles={ALL_ROLES}>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
+              <NotificationsPage />
             </ProtectedRoute>
           }
         />
@@ -124,7 +143,15 @@ function App() {
         <Route
           path="/transfer"
           element={
-            <ProtectedRoute allowedRoles={MOVE_ROLES}>
+            <ProtectedRoute allowedRoles={TRANSFER_ROLES}>
+              <TransferProduct />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/transfer/requests"
+          element={
+            <ProtectedRoute allowedRoles={TRANSFER_ROLES}>
               <TransferProduct />
             </ProtectedRoute>
           }
@@ -132,7 +159,7 @@ function App() {
         <Route
           path="/location"
           element={
-            <ProtectedRoute allowedRoles={MOVE_ROLES}>
+            <ProtectedRoute allowedRoles={LOCATION_ROLES}>
               <UpdateLocation />
             </ProtectedRoute>
           }

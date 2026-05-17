@@ -1,7 +1,12 @@
 const inventoryService = require('../services/inventoryService');
+const notificationTriggers = require('../services/notificationTriggers');
+const notificationSyncService = require('../services/notificationSyncService');
+const userService = require('../services/userService');
 
 exports.listInventory = async (req, res) => {
   try {
+    const userRow = await userService.findUserById(req.user.id);
+    await notificationSyncService.syncDerivedNotifications(req.user.id, userRow);
     const items = await inventoryService.listForUser(req.user.id);
     return res.json({ success: true, data: items });
   } catch (e) {
@@ -14,6 +19,11 @@ exports.addInventory = async (req, res) => {
   try {
     const productId = req.body?.productId ?? req.body?.product_id;
     const { added } = await inventoryService.addForUser(req.user.id, productId);
+    if (added) {
+      void notificationTriggers
+        .onInventoryAdded(req.user.id, String(productId).trim())
+        .catch(() => {});
+    }
     return res.status(added ? 201 : 200).json({
       success: true,
       added,

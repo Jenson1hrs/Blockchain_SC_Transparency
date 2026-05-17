@@ -46,33 +46,31 @@ export function roleWorkspaceCards(role: UserRole): WorkspaceCard[] {
     return [
       { titleKey: 'dash.mfg.create.t', descriptionKey: 'dash.mfg.create.d', to: '/create', icon: '➕' },
       { titleKey: 'dash.mfg.products.t', descriptionKey: 'dash.mfg.products.d', to: '/my-products', icon: '📦' },
-      { titleKey: 'dash.distributor.transfer.t', descriptionKey: 'dash.distributor.transfer.d', to: '/transfer', icon: '🚚' },
+      { titleKey: 'dash.mfg.transfer.t', descriptionKey: 'dash.mfg.transfer.d', to: '/transfer', icon: '🚚' },
       { titleKey: 'dash.mfg.trace.t', descriptionKey: 'dash.mfg.trace.d', to: '/verify', icon: '🔍' },
-      { titleKey: 'dash.mfg.profile.t', descriptionKey: 'dash.mfg.profile.d', to: '/profile', icon: '⚙️' },
     ];
   }
   if (role === 'distributor') {
     return [
       { titleKey: 'nav.assignedProducts', descriptionKey: 'assignedProducts.subtitleDistributor', to: '/assigned-products', icon: '📦' },
+      { titleKey: 'dash.distributor.inbound.t', descriptionKey: 'dash.distributor.inbound.d', to: '/transfer', icon: '📥' },
       { titleKey: 'dash.distributor.transfer.t', descriptionKey: 'dash.distributor.transfer.d', to: '/transfer', icon: '🚚' },
       { titleKey: 'dash.distributor.location.t', descriptionKey: 'dash.distributor.location.d', to: '/location', icon: '📍' },
       { titleKey: 'dash.distributor.verify.t', descriptionKey: 'dash.distributor.verify.d', to: '/verify', icon: '✅' },
-      { titleKey: 'dash.distributor.history.t', descriptionKey: 'dash.distributor.history.d', to: '/verify', icon: '📜' },
     ];
   }
   if (role === 'retailer') {
     return [
-      { titleKey: 'nav.assignedProducts', descriptionKey: 'assignedProducts.subtitleRetailer', to: '/assigned-products', icon: '📦' },
-      { titleKey: 'dash.retailer.transfer.t', descriptionKey: 'dash.retailer.transfer.d', to: '/transfer', icon: '🏪' },
+      { titleKey: 'nav.retailStock', descriptionKey: 'retailStock.subtitle', to: '/assigned-products', icon: '🏪' },
+      { titleKey: 'dash.retailer.inbound.t', descriptionKey: 'dash.retailer.inbound.d', to: '/transfer', icon: '📥' },
+      { titleKey: 'dash.retailer.expiring.t', descriptionKey: 'dash.retailer.expiring.d', to: '/expiring', icon: '⏰' },
       { titleKey: 'dash.retailer.location.t', descriptionKey: 'dash.retailer.location.d', to: '/location', icon: '📍' },
       { titleKey: 'dash.retailer.verify.t', descriptionKey: 'dash.retailer.verify.d', to: '/verify', icon: '✅' },
-      { titleKey: 'dash.retailer.history.t', descriptionKey: 'dash.retailer.history.d', to: '/verify', icon: '📜' },
     ];
   }
   return [
     { titleKey: 'dash.cons.verify.t', descriptionKey: 'dash.cons.verify.d', to: '/verify', icon: '✅' },
-    { titleKey: 'dash.cons.inventory.t', descriptionKey: 'dash.cons.inventory.d', to: '/inventory', icon: '📦' },
+    { titleKey: 'nav.myInventory', descriptionKey: 'dash.cons.inventory.d', to: '/inventory', icon: '📦' },
     { titleKey: 'dash.cons.expiring.t', descriptionKey: 'dash.cons.expiring.d', to: '/expiring', icon: '⏰' },
-    { titleKey: 'dash.cons.profile.t', descriptionKey: 'dash.cons.profile.d', to: '/profile', icon: '⚙️' },
   ];
 }

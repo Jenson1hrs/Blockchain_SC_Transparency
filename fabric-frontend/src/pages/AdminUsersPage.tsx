@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import AppShell from '../components/AppShell';
+import { useRolePageMeta } from '../hooks/useRolePageMeta';
 import { Alert } from '../components/Alert';
 import { fetchAdminUsers } from '../api/adminService';
 import type { AdminUserRow } from '../types';
 
 export default function AdminUsersPage() {
+  const pageMeta = useRolePageMeta('adminUsers', 'admin');
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [roleCounts, setRoleCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -37,10 +39,7 @@ export default function AdminUsersPage() {
   const roleKeys = Object.keys(roleCounts).sort();
 
   return (
-    <AppShell
-      title="Manage Users"
-      subtitle="Platform accounts (read-only prototype)"
-    >
+    <AppShell title={pageMeta.title} subtitle={pageMeta.subtitle}>
       <div className="space-y-6 animate-fade-up">
         {error && (
           <Alert type="error" className="border border-red-200 dark:border-red-900/60">

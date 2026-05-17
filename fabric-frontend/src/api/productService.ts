@@ -3,6 +3,7 @@ import { apiClient } from './client';
 import type {
   Product,
   ProductHistory,
+  ProductTimelineEntry,
   ApiResponse,
   CreateProductResult,
   ProductQrResult,
@@ -10,6 +11,7 @@ import type {
 } from '../types';
 import { API_BASE_URL } from '../config';
 import { formatApiError } from './formatApiError';
+import { mapHistoryToTimeline } from '../utils/productTimeline';
 
 /** Normalize API/DB payload to Product (camelCase). */
 export function normalizeProduct(
@@ -18,7 +20,7 @@ export function normalizeProduct(
   if (!raw) return null;
   const pid = (raw.productId ?? raw.product_id) as string | undefined;
   if (!pid) return null;
-  const status = raw.status as Product['status'];
+  const status = raw.status != null ? String(raw.status) : '';
   const ts = raw.timestamp as string | undefined;
   const manufacturerCompanyName = (raw.manufacturerCompanyName ??
     raw.manufacturer_company_name) as string | null | undefined;
@@ -42,9 +44,7 @@ export function normalizeProduct(
     usageInstructions: (raw.usageInstructions ?? raw.usage_instructions ?? null) as string | null,
     location: String(raw.location ?? ''),
     owner: String(raw.owner ?? ''),
-    status: (['Manufactured', 'In Transit', 'Delivered'].includes(status)
-      ? status
-      : 'Manufactured') as Product['status'],
+    status: status || 'Manufactured',
     timestamp: ts ?? new Date().toISOString(),
     metadataComplete: (raw.metadataComplete ?? raw.metadata_complete ?? null) as boolean | null,
     metadataCompletionPercent: (raw.metadataCompletionPercent ??
@@ -135,18 +135,21 @@ export const getProduct = async (productId: string): Promise<Product> => {
 
 export const getProductHistory = async (
   productId: string
-): Promise<ProductHistory[]> => {
+): Promise<ProductTimelineEntry[]> => {
   try {
-    const response = await apiClient.get<ApiResponse<ProductHistory[]>>(
-      `history/${productId}`
-    );
+    const response = await apiClient.get<
+      ApiResponse<Array<Record<string, unknown> | ProductHistory>> & {
+        timeline?: Array<Record<string, unknown>>;
+      }
+    >(`history/${productId}`);
 
     if (!response.data.success) {
       console.error('History API returned error:', response.data.message);
       return [];
     }
 
-    return response.data.data || [];
+    const raw = response.data.timeline ?? response.data.data ?? [];
+    return mapHistoryToTimeline(raw);
   } catch (error) {
     console.error('History fetch error:', error);
     return [];
@@ -169,7 +172,7 @@ export const createProduct = async (product: {
   const url = `${API_BASE_URL}/create`;
   try {
     const response = await apiClient.post<
-      ApiResponse<Record<string, unknown>> & { qrCode?: string; qrRaw?: string }
+      ApiResponse<Record<string, unknown>> & { qrCode?: string; qrUrl?: string; qrRaw?: string }
     >('create', {
       id: product.productId,
       name: product.name,
@@ -191,7 +194,7 @@ export const createProduct = async (product: {
     const p = normalizeProduct(response.data.data);
     if (!p) throw new Error('Invalid create response');
     const qrCode = response.data.qrCode;
-    const qrRaw = response.data.qrRaw;
+    const qrRaw = response.data.qrUrl ?? response.data.qrRaw;
     if (!qrCode || !qrRaw) {
       throw new Error('Create succeeded but QR payload missing');
     }
@@ -201,6 +204,9 @@ export const createProduct = async (product: {
     if (axios.isAxiosError(e) && e.response?.data && typeof e.response.data === 'object') {
       const msg = (e.response.data as { message?: string }).message;
       if (msg && e.response.status < 500) {
+        if (/already exists/i.test(msg)) {
+          throw new Error('This Product ID already exists. Please use a unique Product ID.');
+        }
         throw new Error(msg);
       }
     }
@@ -348,19 +354,36 @@ export const getProductQr = async (productId: string): Promise<ProductQrResult> 
   }
 };
 
-export const getExpiringProducts = async (days = 7): Promise<Product[]> => {
-  const url = `${API_BASE_URL}/expiring?days=${encodeURIComponent(String(days))}`;
+export interface ExpiringProductsResult {
+  products: Product[];
+  meta?: {
+    scope?: string;
+    days?: number;
+    includeExpired?: boolean;
+    expiredCount?: number;
+  };
+}
+
+export const getExpiringProducts = async (
+  days = 7,
+  options?: { includeExpired?: boolean },
+): Promise<ExpiringProductsResult> => {
+  const includeExpired = options?.includeExpired ? '&includeExpired=1' : '';
+  const url = `${API_BASE_URL}/expiring?days=${encodeURIComponent(String(days))}${includeExpired}`;
   try {
-    const response = await apiClient.get<ApiResponse<Record<string, unknown>[]>>(
-      `expiring?days=${encodeURIComponent(String(days))}`
-    );
+    const response = await apiClient.get<
+      ApiResponse<Record<string, unknown>[]> & {
+        meta?: ExpiringProductsResult['meta'];
+      }
+    >(`expiring?days=${encodeURIComponent(String(days))}${includeExpired}`);
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to load expiring products');
     }
     const rows = response.data.data || [];
-    return rows
+    const products = rows
       .map((r) => normalizeProduct(r))
       .filter((p): p is Product => Boolean(p));
+    return { products, meta: response.data.meta };
   } catch (e) {
     throw new Error(formatApiError(e, url));
   }

@@ -91,7 +91,8 @@ export const STRINGS_ID: Record<string, string> = {
   'dash.distributor.location.d':
     'Perbarui dermaga, gudang, hub, atau pos pemeriksaan di rute.',
   'dash.distributor.verify.t': 'Verifikasi produk',
-  'dash.distributor.verify.d': 'Konfirmasi keaslian saat barang masuk/keluar.',
+  'dash.distributor.verify.d':
+    'Konfirmasi keaslian dan lacak pengiriman serta kepemilikan saat barang masuk/keluar.',
   'dash.distributor.history.t': 'Riwayat rantai pasokan',
   'dash.distributor.history.d': 'Garis waktu penuh—lacak pengiriman dan perubahan kepemilikan.',
 
@@ -163,7 +164,7 @@ export const STRINGS_ID: Record<string, string> = {
   'auth.signInHere': 'Masuk di sini',
   'auth.regLanguageHint': 'Dipilih: {{label}} ({{code}})',
 
-  'landing.brand': 'BlockChain Supply',
+  'landing.brand': 'VeriChain',
   'landing.tagline': 'Rantai pasokan anti palsu',
   'landing.signIn': 'Masuk',
   'landing.getStarted': 'Mulai',
@@ -259,9 +260,9 @@ export const STRINGS_ID: Record<string, string> = {
   'landing.footerSignIn': 'Masuk',
   'landing.footerRegister': 'Daftar',
   'landing.footerProfile': 'Profil',
-  'landing.footerFyp': 'Proyek akhir tahun',
+  'landing.footerFyp': '',
   'landing.footerCopy':
-    '© 2024 BlockChain Supply. Demo proyek akhir. Dibangun dengan blockchain.',
+    '© 2026 VeriChain. Secure Product Traceability Powered by Blockchain.',
 
   'landing.langLabel': 'Bahasa',
 };

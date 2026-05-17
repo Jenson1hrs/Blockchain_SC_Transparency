@@ -17,8 +17,6 @@ const ROLES: { value: UserRole; labelKey: string }[] = [
   { value: 'manufacturer', labelKey: 'auth.roleManufacturer' },
   { value: 'distributor', labelKey: 'auth.roleDistributor' },
   { value: 'retailer', labelKey: 'auth.roleRetailer' },
-  { value: 'admin', labelKey: 'auth.roleAdmin' },
-  { value: 'regulator', labelKey: 'auth.roleRegulator' },
 ];
 
 export default function Register() {
@@ -139,6 +137,9 @@ export default function Register() {
                       </option>
                     ))}
                   </select>
+                  <p className="text-xs text-slate-500 dark:text-neutral-300">
+                    {t('auth.privilegedRoleNote')}
+                  </p>
                   <Alert type="warning" className="mt-2">
                     {t('auth.roleWarning')}
                   </Alert>

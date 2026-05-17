@@ -1,5 +1,6 @@
 const userService = require('../services/userService');
 const dashboardService = require('../services/dashboardService');
+const notificationSyncService = require('../services/notificationSyncService');
 
 exports.summary = async (req, res) => {
   try {
@@ -10,6 +11,7 @@ exports.summary = async (req, res) => {
 
     await userService.ensureUsersTable();
     const userRow = await userService.findUserById(req.user.id);
+    await notificationSyncService.syncDerivedNotifications(req.user.id, userRow);
 
     const data = await dashboardService.getSummaryByRole(role, req.user.id, userRow);
     if (data == null) {

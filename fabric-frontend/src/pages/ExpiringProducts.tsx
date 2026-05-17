@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../components/AppShell';
+import { useRolePageMeta } from '../hooks/useRolePageMeta';
+import { useAuth } from '../context/AuthContext';
 import { Button, Alert, ProductCard } from '../components';
 import { getExpiringProducts } from '../api/productService';
 import { getExpiryReminder } from '../utils/expiryReminder';
@@ -8,7 +10,11 @@ import type { Product } from '../types';
 import { addToUserInventory } from '../api/inventoryService';
 
 const ExpiringProducts = () => {
+  const { user } = useAuth();
+  const pageMeta = useRolePageMeta('expiring');
+  const isConsumer = user?.role === 'consumer';
   const [items, setItems] = useState<Product[]>([]);
+  const [expiredInScope, setExpiredInScope] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inventoryMsg, setInventoryMsg] = useState<string | null>(null);
@@ -16,8 +22,13 @@ const ExpiringProducts = () => {
   useEffect(() => {
     const run = async () => {
       try {
-        const rows = await getExpiringProducts(7);
-        setItems(rows);
+        const { products, meta } = await getExpiringProducts(7, { includeExpired: true });
+        setItems(products);
+        const fromMeta = meta?.expiredCount ?? 0;
+        const fromList = products.filter(
+          (p) => getExpiryReminder(p.expiryDate)?.level === 'expired',
+        ).length;
+        setExpiredInScope(Math.max(fromMeta, fromList));
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load products');
       } finally {
@@ -36,14 +47,11 @@ const ExpiringProducts = () => {
   const warningCount = items.filter(
     (p) => getExpiryReminder(p.expiryDate)?.level === 'warning',
   ).length;
+  const showExpiredStat = expiredCount > 0 || expiredInScope > 0;
 
   return (
-    <AppShell
-      title="Expiring Products"
-      subtitle="Products reaching expiry within the next 7 days"
-    >
+    <AppShell title={pageMeta.title} subtitle={pageMeta.subtitle}>
       <div className="space-y-8 animate-fade-up">
-        {/* Header with Stats */}
         <div className="card p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -51,31 +59,27 @@ const ExpiringProducts = () => {
                 Expiry Alerts
               </h2>
               <p className="text-sm text-neutral-600 dark:text-neutral-200 mt-1">
-                Monitor products approaching their expiry dates
+                {pageMeta.subtitle}
               </p>
             </div>
             <div className="flex gap-4 text-sm">
-              {expiredCount > 0 && (
+              {showExpiredStat && (
                 <div className="text-center">
                   <div className="text-2xl font-bold text-danger-600">
-                    {expiredCount}
+                    {expiredCount || expiredInScope}
                   </div>
                   <div className="text-neutral-500 dark:text-neutral-300">Expired</div>
                 </div>
               )}
               {urgentCount > 0 && (
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-warning-600">
-                    {urgentCount}
-                  </div>
+                  <div className="text-2xl font-bold text-warning-600">{urgentCount}</div>
                   <div className="text-neutral-500 dark:text-neutral-300">Urgent</div>
                 </div>
               )}
               {warningCount > 0 && (
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-warning-600">
-                    {warningCount}
-                  </div>
+                  <div className="text-2xl font-bold text-warning-600">{warningCount}</div>
                   <div className="text-neutral-500 dark:text-neutral-300">Warning</div>
                 </div>
               )}
@@ -83,66 +87,21 @@ const ExpiringProducts = () => {
           </div>
         </div>
 
-        {/* Loading State */}
         {loading && (
           <div className="card p-12 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300 rounded-full mb-4">
-              <svg
-                className="animate-spin w-6 h-6"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-              Loading Products
-            </h3>
-            <p className="text-neutral-600 dark:text-neutral-200">
-              Checking for expiring products...
-            </p>
+            <p className="text-neutral-600 dark:text-neutral-200">Checking for expiring products…</p>
           </div>
         )}
 
-        {/* Error State */}
         {error && !loading && <Alert type="error">{error}</Alert>}
 
-        {/* Empty State */}
         {!loading && !error && items.length === 0 && (
           <div className="card p-12 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-success-100 dark:bg-success-900/35 text-success-600 dark:text-success-300 rounded-full mb-6">
-              <svg
-                className="w-8 h-8"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
             <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
               All Good!
             </h3>
             <p className="text-neutral-600 dark:text-neutral-200 mb-8 max-w-md mx-auto">
-              No products are expiring within the next 7 days. All your tracked
-              products are safe.
+              No products in your scope are expiring within the next 7 days.
             </p>
             <Button as={Link} to="/verify" size="lg">
               Verify Product
@@ -150,7 +109,6 @@ const ExpiringProducts = () => {
           </div>
         )}
 
-        {/* Products List */}
         {!loading && !error && items.length > 0 && (
           <div className="space-y-6">
             {items.map((product) => {
@@ -178,27 +136,31 @@ const ExpiringProducts = () => {
                       >
                         Verify
                       </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          void (async () => {
-                            setError(null);
-                            try {
-                              const { added } = await addToUserInventory(product.productId);
-                              setInventoryMsg(
-                                added
-                                  ? `${product.name} added to inventory`
-                                  : `${product.name} already in inventory`,
-                              );
-                            } catch (e) {
-                              setError(e instanceof Error ? e.message : 'Could not save to inventory');
-                            }
-                          })();
-                        }}
-                      >
-                        Save
-                      </Button>
+                      {isConsumer && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            void (async () => {
+                              setError(null);
+                              try {
+                                const { added } = await addToUserInventory(product.productId);
+                                setInventoryMsg(
+                                  added
+                                    ? `${product.name} added to inventory`
+                                    : `${product.name} already in inventory`,
+                                );
+                              } catch (e) {
+                                setError(
+                                  e instanceof Error ? e.message : 'Could not save to inventory',
+                                );
+                              }
+                            })();
+                          }}
+                        >
+                          Save
+                        </Button>
+                      )}
                     </div>
                   }
                 />
@@ -207,7 +169,6 @@ const ExpiringProducts = () => {
           </div>
         )}
 
-        {/* Inventory Message */}
         {inventoryMsg && (
           <Alert type="success">
             {inventoryMsg}{' '}

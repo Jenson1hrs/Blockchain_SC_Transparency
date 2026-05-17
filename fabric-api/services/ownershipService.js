@@ -1,8 +1,33 @@
 const pool = require('../config/db');
 const userService = require('./userService');
 const organizationService = require('./organizationService');
+const productStatusService = require('./productStatusService');
 
 const TRANSFERABLE_ROLES = ['manufacturer', 'distributor', 'retailer'];
+/** Enterprise custody chain: Manufacturer → Distributor → Retailer (consumers are off-chain). */
+const OUTBOUND_TRANSFER_ROLES = ['manufacturer', 'distributor'];
+
+function assertValidSupplyChainTransfer(senderRole, recipientRole) {
+  if (senderRole === 'retailer') {
+    const err = new Error(
+      'Retailers are the final business custody point and cannot send blockchain transfer requests.'
+    );
+    err.statusCode = 403;
+    throw err;
+  }
+  if (senderRole === 'manufacturer' && recipientRole !== 'distributor') {
+    const err = new Error(
+      'Manufacturers may only send transfer requests to distributor organizations.'
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+  if (senderRole === 'distributor' && recipientRole !== 'retailer') {
+    const err = new Error('Distributors may only send transfer requests to retailer organizations.');
+    err.statusCode = 400;
+    throw err;
+  }
+}
 
 async function ensureOwnershipColumns() {
   await organizationService.ensureProductOwnershipColumns();
@@ -43,6 +68,11 @@ async function getOwnerDisplayForUser(userId) {
 }
 
 async function assertCanTransfer(actorUser, productId) {
+  if (!OUTBOUND_TRANSFER_ROLES.includes(actorUser.role) && actorUser.role !== 'admin') {
+    const err = new Error('Your role cannot initiate blockchain custody transfers.');
+    err.statusCode = 403;
+    throw err;
+  }
   await ensureOwnershipColumns();
   const productRes = await pool.query(
     `SELECT product_id, current_owner_user_id FROM products WHERE product_id = $1`,
@@ -54,7 +84,7 @@ async function assertCanTransfer(actorUser, productId) {
     err.statusCode = 404;
     throw err;
   }
-  const isOwner = product.current_owner_user_id === actorUser.id;
+  const isOwner = Number(product.current_owner_user_id) === Number(actorUser.id);
   const isAdmin = actorUser.role === 'admin';
   if (!isOwner && !isAdmin) {
     const err = new Error(
@@ -78,7 +108,7 @@ async function assertCanUpdateLocation(actorUser, productId) {
     err.statusCode = 404;
     throw err;
   }
-  if (product.current_owner_user_id !== actorUser.id) {
+  if (Number(product.current_owner_user_id) !== Number(actorUser.id)) {
     const err = new Error(
       'You cannot update this product because it is not assigned to your organization.'
     );
@@ -111,18 +141,23 @@ async function syncOwnershipAfterTransfer(productId, recipientUserId, chainOwner
   if (!recipient) {
     throw new Error('Recipient user not found');
   }
+  const appStatus =
+    productStatusService.statusAfterAccept(recipient.role) ||
+    productStatusService.STATUSES.MANUFACTURED;
   await pool.query(
     `UPDATE products
      SET owner = $2,
-         current_owner_user_id = $3,
-         current_owner_role = $4,
-         current_owner_name = $5,
-         last_transferred_to_user_id = $3,
+         status = $3,
+         current_owner_user_id = $4,
+         current_owner_role = $5,
+         current_owner_name = $6,
+         last_transferred_to_user_id = $4,
          last_transferred_at = CURRENT_TIMESTAMP
      WHERE product_id = $1`,
     [
       productId,
       chainOwner || recipient.displayName,
+      appStatus,
       recipient.userId,
       recipient.role,
       recipient.displayName,
@@ -181,7 +216,10 @@ function listWhereForRole(role, userId) {
   switch (role) {
     case 'manufacturer':
       return {
-        sql: 'manufacturer_user_id = $1 AND manufacturer_user_id IS NOT NULL',
+        sql: `(
+          (manufacturer_user_id = $1 AND manufacturer_user_id IS NOT NULL)
+          OR current_owner_user_id = $1
+        )`,
         params: [userId],
       };
     case 'distributor':
@@ -220,6 +258,8 @@ async function listAssignedProducts(userId, role, { limit = 100 } = {}) {
 
 module.exports = {
   TRANSFERABLE_ROLES,
+  OUTBOUND_TRANSFER_ROLES,
+  assertValidSupplyChainTransfer,
   ensureOwnershipColumns,
   getUserDisplayName,
   getOwnerDisplayForUser,

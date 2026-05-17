@@ -89,7 +89,8 @@ export const STRINGS_TH: Record<string, string> = {
   'dash.distributor.location.t': 'ตำแหน่งคลังและการจัดจำหน่าย',
   'dash.distributor.location.d': 'อัปเดตท่าเรือ คลัง ฮับ หรือจุดตรวจบนเส้นทาง',
   'dash.distributor.verify.t': 'ตรวจสอบผลิตภัณฑ์',
-  'dash.distributor.verify.d': 'ยืนยันความแท้ระหว่างรับเข้าและส่งออก',
+  'dash.distributor.verify.d':
+    'ยืนยันความแท้และติดตามการขนส่งและการครอบครองระหว่างรับเข้าและส่งออก',
   'dash.distributor.history.t': 'ประวัติซัพพลายเชน',
   'dash.distributor.history.d': 'ไทม์ไลน์เต็ม—ติดตามการขนส่งและการเปลี่ยนการครอบครอง',
 
@@ -159,7 +160,7 @@ export const STRINGS_TH: Record<string, string> = {
   'auth.signInHere': 'เข้าสู่ระบบที่นี่',
   'auth.regLanguageHint': 'เลือกแล้ว: {{label}} ({{code}})',
 
-  'landing.brand': 'BlockChain Supply',
+  'landing.brand': 'VeriChain',
   'landing.tagline': 'ซัพพลายเชนป้องกันของปลอม',
   'landing.signIn': 'เข้าสู่ระบบ',
   'landing.getStarted': 'เริ่มต้น',
@@ -257,9 +258,9 @@ export const STRINGS_TH: Record<string, string> = {
   'landing.footerSignIn': 'เข้าสู่ระบบ',
   'landing.footerRegister': 'ลงทะเบียน',
   'landing.footerProfile': 'โปรไฟล์',
-  'landing.footerFyp': 'โครงงานจบปี',
+  'landing.footerFyp': '',
   'landing.footerCopy':
-    '© 2024 BlockChain Supply โครงงานจบปีสาธิต สร้างด้วยเทคโนโลยีบล็อกเชน',
+    '© 2026 VeriChain. Secure Product Traceability Powered by Blockchain.',
 
   'landing.langLabel': 'ภาษา',
 };
