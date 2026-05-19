@@ -128,8 +128,6 @@ const VerifyProduct: React.FC = () => {
     }
   };
 
-  const handleVerify = () => void loadProductById(query || productId);
-
   const handleScan = async (scannedText: string) => {
     const parsed = parseQrPayload(scannedText);
     if (!parsed) {
@@ -204,8 +202,8 @@ const VerifyProduct: React.FC = () => {
               Verify Product
             </h2>
             <p className="text-neutral-600 dark:text-neutral-200">
-              Search by product ID, name, manufacturer, or batch. QR scan remains the trusted
-              verification path.
+              Look up a product by ID, name, manufacturer, or batch. Use QR verification for
+              authenticity checks.
             </p>
           </div>
 
@@ -219,14 +217,13 @@ const VerifyProduct: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <TextField
-                  label="Search products"
+                  label="Product lookup"
                   value={query}
                   onChange={(e) => {
                     setQuery(e.target.value);
                     setProductId(e.target.value);
                   }}
                   placeholder="Product ID, name, manufacturer, or batch"
-                  helperText="Multiple matches require selecting a product below"
                 />
               </div>
               <div className="flex flex-wrap gap-2 items-end">
@@ -236,17 +233,9 @@ const VerifyProduct: React.FC = () => {
                 <Button
                   type="button"
                   variant="secondary"
-                  isLoading={loading}
-                  onClick={() => void handleVerify()}
-                >
-                  Verify by ID
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
                   onClick={() => setShowScanner((s) => !s)}
                 >
-                  {showScanner ? 'Close Scanner' : 'Scan QR'}
+                  {showScanner ? 'Close QR options' : 'Verify with QR'}
                 </Button>
               </div>
             </div>
@@ -343,13 +332,14 @@ const VerifyProduct: React.FC = () => {
 
           {/* QR Scanner Section */}
           {showScanner && (
-            <div className="mt-8 pt-6 border-t border-neutral-200">
+            <div className="mt-8 pt-6 border-t border-neutral-200 dark:border-neutral-600">
               <div className="mb-6">
                 <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
-                  Scan QR Code
+                  Verify with QR
                 </h3>
                 <p className="text-neutral-600 dark:text-neutral-200">
-                  Use your camera or paste a verification link
+                  Use your phone&apos;s QR scanner app, paste the verification link, or upload a photo of
+                  the QR code.
                 </p>
               </div>
 
@@ -379,8 +369,11 @@ const VerifyProduct: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="border border-neutral-200 rounded-lg p-4">
-                  <QRScanner onScan={(t) => void handleScan(t)} />
+                <div className="border border-neutral-200 dark:border-neutral-600 rounded-lg p-4">
+                  <QRScanner
+                    onScan={(t) => void handleScan(t)}
+                    disabled={loading}
+                  />
                 </div>
               </div>
             </div>

@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { getProductQr } from '../api/productService';
 import AppShell from '../components/AppShell';
 import type { ProductQrResult } from '../types';
-import { QR_URL_HELPER_TEXT, verifyRouteFromQrUrl } from '../utils/verifyQrUrl';
+import { verifyRouteFromQrUrl } from '../utils/verifyQrUrl';
 import { Alert } from '../components/Alert';
 import { friendlyQrLoadError } from '../utils/friendlyErrors';
 
@@ -67,7 +67,6 @@ const ProductQr = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-neutral-200 mb-2">Verification URL</p>
-                  <p className="text-xs text-page-muted mb-2 leading-relaxed">{QR_URL_HELPER_TEXT}</p>
                   {usesLocalhost && (
                     <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2 dark:text-amber-200 dark:bg-amber-950/30 dark:border-amber-900/50">
                       This URL uses <strong>localhost</strong>. Set{' '}

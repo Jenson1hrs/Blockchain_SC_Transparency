@@ -8,6 +8,17 @@ import type { UserRole } from '../types';
 import { ThemeToggle } from './ThemeToggle';
 import { Footer } from './Footer';
 import { NotificationBell } from './NotificationBell';
+import { StickyNavToggle } from './StickyNavToggle';
+import { homePathForUser } from '../utils/roleNavigation';
+import { VERICHAIN_NAME } from '../constants/branding';
+
+const APP_NAV_COLLAPSED_KEY = 'verichain-app-nav-collapsed';
+const APP_NAV_ID = 'app-shell-nav';
+
+function readAppNavCollapsed(): boolean {
+  if (typeof window === 'undefined') return false;
+  return sessionStorage.getItem(APP_NAV_COLLAPSED_KEY) === '1';
+}
 
 interface AppShellProps {
   title: string;
@@ -107,6 +118,16 @@ const AppShell = ({ title, subtitle, children }: AppShellProps) => {
   const { t } = useI18n();
   const [inventoryCount, setInventoryCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(readAppNavCollapsed);
+  const homePath = homePathForUser(user);
+
+  const toggleNav = () => {
+    setNavCollapsed((prev) => {
+      const next = !prev;
+      sessionStorage.setItem(APP_NAV_COLLAPSED_KEY, next ? '1' : '0');
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!user || user.role !== 'consumer') {
@@ -143,7 +164,11 @@ const AppShell = ({ title, subtitle, children }: AppShellProps) => {
         aria-hidden
       />
     ) : (
-      <nav className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2" aria-label="Main">
+      <nav
+        id={APP_NAV_ID}
+        className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2"
+        aria-label="Main"
+      >
         {mainNav.map((item) => (
           <NavLink key={item.to} to={item.to} className={navCls}>
             {t(item.labelKey)}
@@ -246,10 +271,35 @@ const AppShell = ({ title, subtitle, children }: AppShellProps) => {
         </div>
 
         <header className={stickyBarClass}>
-          <div className="flex flex-wrap items-center justify-between gap-2 gap-y-2.5">
-            <NavRow />
+          <div className="flex flex-nowrap items-center gap-2">
+            <StickyNavToggle
+              collapsed={navCollapsed}
+              onToggle={toggleNav}
+              controlsId={APP_NAV_ID}
+            />
+            <div className="min-w-0 flex-1">
+              {navCollapsed ? (
+                <Link
+                  to={homePath}
+                  className="inline-flex w-fit items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-semibold text-primary-700 hover:bg-primary-50 dark:text-primary-300 dark:hover:bg-primary-950/40"
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 text-[10px] font-bold text-white">
+                    VC
+                  </span>
+                  <span className="truncate max-w-[9rem] sm:max-w-none">{VERICHAIN_NAME}</span>
+                </Link>
+              ) : (
+                <NavRow />
+              )}
+            </div>
             <Controls />
           </div>
+          {navCollapsed && (
+            <p className="mt-2 border-t border-neutral-200/60 pt-2 text-center text-[11px] text-page-muted dark:border-neutral-600/60">
+              Tap the <span className="font-medium text-primary-700 dark:text-primary-300">arrow</span>{' '}
+              to show navigation
+            </p>
+          )}
         </header>
 
         {children}

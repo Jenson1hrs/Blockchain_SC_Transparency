@@ -7,6 +7,3 @@ export function verifyRouteFromQrUrl(qrUrl: string): string {
     return '/verify';
   }
 }
-
-export const QR_URL_HELPER_TEXT =
-  'Use LAN/IP URL when testing QR scanning from a phone. Use localhost only for laptop testing.';

@@ -310,8 +310,12 @@ export const STRINGS_EN: Record<string, string> = {
   'landing.cardScanSub': 'Instant QR verification with blockchain security.',
   'landing.cardTraceTitle': 'Traceability',
   'landing.cardTraceSub': 'Complete product journey from manufacture to sale.',
-  'landing.cardExpiryTitle': 'Expiry Alerts',
-  'landing.cardExpirySub': 'Stay ahead of expiry with in-app notifications.',
+  'landing.cardExpiryTitle': 'Safety & expiry alerts',
+  'landing.cardExpirySub':
+    'Expiry reminders plus halal and allergy or dietary alerts matched to your profile.',
+  'landing.cardInventoryTitle': 'Personal inventory',
+  'landing.cardInventorySub':
+    'Consumers save verified products and manage their own inventory in one place.',
 
   'landing.featuresHeading': 'Powerful Features for Modern Supply Chains',
   'landing.featuresSub':

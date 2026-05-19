@@ -3,3 +3,9 @@ node_modules/
 .env
 *.log
 .DS_Store
+
+# Large landing video — keep locally, not in GitHub (100 MB limit)
+fabric-frontend/Background_video/*.mp4
+fabric-frontend/public/Background_video/
+*.mp4
+*:Zone.Identifier

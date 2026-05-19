@@ -34,7 +34,7 @@ export function LandingScrollAmbient({ progress }: Props) {
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden motion-reduce:hidden"
     >
       <div
-        className="absolute inset-0 bg-gradient-to-b from-slate-100 via-white to-primary-50/60 dark:from-neutral-950 dark:via-neutral-950 dark:to-primary-950/45 opacity-95 dark:opacity-100 motion-safe:transition-[background-position] motion-safe:duration-700 motion-safe:ease-out"
+        className="absolute inset-0 bg-gradient-to-b from-slate-200/50 via-slate-100/35 to-primary-100/40 dark:from-neutral-950 dark:via-neutral-950 dark:to-primary-950/45 opacity-70 dark:opacity-100 motion-safe:transition-[background-position] motion-safe:duration-700 motion-safe:ease-out"
         style={{
           backgroundPosition: `50% ${p * 22}%`,
         }}

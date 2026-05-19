@@ -5,7 +5,7 @@ import AppShell from '../components/AppShell';
 import { useRolePageMeta } from '../hooks/useRolePageMeta';
 import { useAuth } from '../context/AuthContext';
 import type { Product } from '../types';
-import { QR_URL_HELPER_TEXT, verifyRouteFromQrUrl } from '../utils/verifyQrUrl';
+import { verifyRouteFromQrUrl } from '../utils/verifyQrUrl';
 import { Alert } from '../components/Alert';
 import { friendlyCreateError } from '../utils/friendlyErrors';
 
@@ -261,7 +261,6 @@ const CreateProduct = () => {
 
               <div>
                 <p className="text-sm text-gray-600 dark:text-neutral-200 mb-2">Verification URL</p>
-                <p className="text-xs text-page-muted mb-2 leading-relaxed">{QR_URL_HELPER_TEXT}</p>
                 {(result.qrRaw.includes('localhost') ||
                   result.qrRaw.includes('127.0.0.1')) && (
                   <div className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
