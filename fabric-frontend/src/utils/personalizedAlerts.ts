@@ -120,35 +120,43 @@ export function getPersonalizedAlerts(
 
     const isUnknown =
       !raw ||
+      h === 'unknown' ||
+      h === 'none' ||
       h === 'n/a' ||
       h === 'na' ||
       /\bunknown\b/i.test(raw);
 
     const isNonHalal =
+      h === 'non halal' ||
       h.includes('not halal') ||
       h.includes('non-halal') ||
       h.includes('non halal');
+
+    const isVegeterian = h === 'vegeterian' || h === 'vegetarian';
 
     if (isNonHalal) {
       alerts.push({
         type: 'halal',
         severity: 'danger',
         title: 'Halal',
+        message: 'This product is not marked as halal-certified.',
+      });
+    } else if (isVegeterian) {
+      alerts.push({
+        type: 'halal',
+        severity: 'warning',
+        title: 'Halal',
         message:
-          'This product is not marked as halal-certified.',
+          'This product is marked as vegetarian, not halal-certified.',
       });
     } else if (isUnknown) {
       alerts.push({
         type: 'halal',
         severity: 'warning',
         title: 'Halal status unknown',
-        message:
-          'Halal status is not provided for this product.',
+        message: 'Halal status is not provided for this product.',
       });
-    } else if (
-      h.includes('halal certified') ||
-      (h.includes('halal') && !isNonHalal)
-    ) {
+    } else if (h === 'halal' || (h.includes('halal') && !isNonHalal)) {
       alerts.push({
         type: 'halal',
         severity: 'success',

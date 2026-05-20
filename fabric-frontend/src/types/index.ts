@@ -342,6 +342,32 @@ export interface DashboardSummaryResponse {
   data: DashboardSummaryData;
 }
 
+export type ComplaintStatus = 'open' | 'reviewed' | 'resolved';
+
+export interface ProductComplaint {
+  id: number;
+  productId: string;
+  manufacturerUserId: number;
+  category: string;
+  message: string;
+  reporterUserId: number | null;
+  reporterRole: string | null;
+  status: ComplaintStatus;
+  manufacturerResponse: string | null;
+  createdAt: string;
+  updatedAt: string;
+  productName: string | null;
+  batchNumber: string | null;
+}
+
+export interface ManufacturerComplaintSummary {
+  totalCount: number;
+  openCount: number;
+  reviewedCount: number;
+  resolvedCount: number;
+  recentOpen: ProductComplaint[];
+}
+
 export type NotificationSeverity = 'info' | 'success' | 'warning' | 'danger';
 
 export interface AppNotification {

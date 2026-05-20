@@ -8,6 +8,7 @@ import type { Product } from '../types';
 import { verifyRouteFromQrUrl } from '../utils/verifyQrUrl';
 import { Alert } from '../components/Alert';
 import { friendlyCreateError } from '../utils/friendlyErrors';
+import { HALAL_STATUS_OPTIONS } from '../constants/halalStatusOptions';
 
 const CreateProduct = () => {
   const pageMeta = useRolePageMeta('create', 'manufacturer');
@@ -112,13 +113,12 @@ const CreateProduct = () => {
           )}
 
           {[
-            ['productId', 'Product ID', 'text', 'e.g. P400'],
-            ['name', 'Name', 'text', ''],
+            ['productId', 'Product ID', 'text', 'e.g. GC-VS-001'],
+            ['name', 'Product name', 'text', 'e.g. GlowCare Vitamin C Brightening Serum'],
             ...(!isManufacturer ? [['manufacturer', 'Manufacturer', 'text', '']] as const : []),
-            ['batchNumber', 'Batch number', 'text', ''],
-            ['location', 'Location', 'text', ''],
+            ['batchNumber', 'Batch number', 'text', 'e.g. GC2026-VS-A1'],
+            ['location', 'Location', 'text', 'e.g. Shah Alam Production Facility'],
             ['expiryDate', 'Expiry Date (optional)', 'date', ''],
-            ['halalStatus', 'Halal Status', 'text', 'Halal / Non-Halal / Unknown'],
           ].map(([key, label, type, ph]) => (
             <div key={key as string}>
               <label className="block text-sm font-medium text-gray-700 dark:text-neutral-200 mb-1">
@@ -136,6 +136,28 @@ const CreateProduct = () => {
               />
             </div>
           ))}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-neutral-200 mb-1">
+              Halal status
+            </label>
+            <select
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-neutral-800 dark:text-neutral-100"
+              value={form.halalStatus}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, halalStatus: e.target.value }))
+              }
+            >
+              <option value="" disabled>
+                Select a status
+              </option>
+              {HALAL_STATUS_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-neutral-200 mb-1">
               Product Image Upload (optional)
@@ -175,9 +197,21 @@ const CreateProduct = () => {
             </div>
           )}
           {[
-            ['ingredients', 'Ingredients (optional)', 'e.g. Sugar, cocoa, milk'],
-            ['allergyInfo', 'Allergy Info (optional)', 'e.g. Contains milk and nuts'],
-            ['usageInstructions', 'Usage Instructions (optional)', 'e.g. Keep refrigerated after opening'],
+            [
+              'ingredients',
+              'Ingredients (optional)',
+              'e.g. Aqua, Ascorbic Acid 10%, Niacinamide, Hyaluronic Acid, Glycerin',
+            ],
+            [
+              'allergyInfo',
+              'Allergy info (optional)',
+              'e.g. Contains fragrance. Patch test before full use.',
+            ],
+            [
+              'usageInstructions',
+              'Usage instructions (optional)',
+              'e.g. Apply 2–3 drops morning and night. Use sunscreen during the day.',
+            ],
           ].map(([key, label, ph]) => (
             <div key={key as string}>
               <label className="block text-sm font-medium text-gray-700 dark:text-neutral-200 mb-1">

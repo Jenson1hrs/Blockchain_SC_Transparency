@@ -565,7 +565,7 @@ function skeletonCountForRole(role: UserRole): number {
     case 'regulator':
       return 6;
     case 'manufacturer':
-      return 6;
+      return 10;
     case 'distributor':
       return 8;
     case 'retailer':

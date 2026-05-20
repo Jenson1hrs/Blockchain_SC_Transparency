@@ -9,6 +9,7 @@ const QRCode = require('qrcode');
 const crypto = require('crypto');
 const { buildVerifyQrUrl } = require('../utils/frontendUrl');
 const { getQrSecret } = require('../utils/qrSecret');
+const productMetadataService = require('../services/productMetadataService');
 
 function generateHash(productId, batchNumber) {
     return crypto
@@ -293,6 +294,25 @@ exports.updateLocation = async (req, res) => {
     } catch (error) {
         const status = error.statusCode || 500;
         if (status >= 500) console.error('updateLocation', error);
+        return res.status(status).json({ success: false, message: error.message });
+    }
+};
+
+exports.updateManufacturerMetadata = async (req, res) => {
+    try {
+        if (req.user?.role !== 'manufacturer') {
+            return res.status(403).json({ success: false, message: 'Only manufacturers can update product metadata' });
+        }
+        const productId = req.params.id;
+        const data = await productMetadataService.updateManufacturerProductMetadata(
+            req.user.id,
+            productId,
+            req.body
+        );
+        return res.json({ success: true, data, message: 'Product metadata updated' });
+    } catch (error) {
+        const status = error.statusCode || 500;
+        if (status >= 500) console.error('updateManufacturerMetadata', error);
         return res.status(status).json({ success: false, message: error.message });
     }
 };

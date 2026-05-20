@@ -36,18 +36,19 @@ const PAGE_META: Record<RolePageId, Partial<Record<UserRole, PageMeta>> & { defa
   },
   create: {
     default: {
-      title: 'Create product',
-      subtitle: 'Register authenticity on the ledger and generate a traceable QR code.',
+      title: 'Register skincare product',
+      subtitle: 'Add batch, expiry, and safety metadata on the ledger and generate a traceable QR code.',
     },
   },
   verify: {
     default: {
       title: 'Product verification',
-      subtitle: 'Confirm authenticity and review blockchain-backed history.',
+      subtitle: 'Confirm authenticity and review ingredients, expiry, and blockchain-backed history.',
     },
     consumer: {
-      title: 'Verify product',
-      subtitle: 'Scan or enter a product ID to confirm authenticity before you buy or consume.',
+      title: 'Verify skincare product',
+      subtitle:
+        'Scan or enter a product ID to check authenticity, expiry, ingredients, and halal or allergy alerts before use.',
     },
     regulator: {
       title: 'Product verification',
@@ -103,6 +104,10 @@ const PAGE_META: Record<RolePageId, Partial<Record<UserRole, PageMeta>> & { defa
       title: 'Oversight expiry watch',
       subtitle: 'Platform-wide expiring products for regulatory oversight.',
     },
+    manufacturer: {
+      title: 'Expiring batches',
+      subtitle: 'Your registered skincare products approaching expiry within seven days.',
+    },
   },
   assignedProducts: {
     default: {
@@ -120,8 +125,9 @@ const PAGE_META: Record<RolePageId, Partial<Record<UserRole, PageMeta>> & { defa
   },
   myProducts: {
     default: {
-      title: 'Registered products',
-      subtitle: 'Products you originated on-chain with metadata and QR readiness.',
+      title: 'Product trust catalogue',
+      subtitle:
+        'Filter and search your skincare line — consumer trust metadata, custody, expiry, and QR readiness.',
     },
   },
   notifications: {

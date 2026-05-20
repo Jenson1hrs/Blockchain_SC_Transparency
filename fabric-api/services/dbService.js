@@ -46,10 +46,17 @@ function mapProductToApi(row) {
     metadataComplete: meta.isComplete,
     metadataCompletionPercent: meta.completionPercent,
     metadataMissingFields: meta.missingFields,
-    manufacturerOrganizationVerified: Boolean(row.organization_verified),
-    manufacturerVerifiedByRegulator: Boolean(row.verified_by_regulator),
-    manufacturerVerificationDate: row.verification_date ?? null,
-    manufacturerOrganizationFlagged: Boolean(row.organization_flagged),
+    manufacturerOrganizationVerified: Boolean(
+      row.manufacturer_org_verified ?? row.organization_verified
+    ),
+    manufacturerVerifiedByRegulator: Boolean(
+      row.manufacturer_verified_by_regulator ?? row.verified_by_regulator
+    ),
+    manufacturerVerificationDate:
+      row.manufacturer_verification_date ?? row.verification_date ?? null,
+    manufacturerOrganizationFlagged: Boolean(
+      row.manufacturer_org_flagged ?? row.organization_flagged
+    ),
     currentOwnerUserId: row.current_owner_user_id ?? null,
     currentOwnerRole: row.current_owner_role ?? null,
     currentOwnerName: row.current_owner_name ?? null,

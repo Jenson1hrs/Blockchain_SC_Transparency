@@ -12,6 +12,7 @@ import {
   ROLE_WORKSPACE_TITLE,
 } from '../constants/dashboardRoleCopy';
 import { roleWorkspaceCards } from '../utils/roleWorkspaceCards';
+import { ManufacturerProfileTrustBanner } from '../components/ManufacturerProfileTrustBanner';
 
 /** Signed-in home (`/home`): analytics from API + role-based shortcuts from `roleWorkspaceCards`. */
 export default function WorkspaceHome() {
@@ -45,6 +46,8 @@ export default function WorkspaceHome() {
         )}
 
         <RoleWorkspaceHero role={user.role} userName={user.name} />
+
+        {user.role === 'manufacturer' && <ManufacturerProfileTrustBanner />}
 
         <DashboardAnalytics
           role={user.role}

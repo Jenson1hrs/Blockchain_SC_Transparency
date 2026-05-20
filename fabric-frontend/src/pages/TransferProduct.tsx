@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchSupplyChainUsers, type SupplyChainUser } from '../api/userService';
 import {
@@ -11,6 +11,12 @@ import {
 import type { TransferRequest, UserRole } from '../types';
 import AppShell from '../components/AppShell';
 import { Button, ConfirmModal, Toast } from '../components';
+import {
+  TransferProductIdPreview,
+  TransferProductSummaryBlock,
+  type ProductIdPreviewStatus,
+} from '../components/ProductLookupPreview';
+import type { Product } from '../types';
 import {
   VerificationBadge,
   OrganizationFlaggedBadge,
@@ -62,6 +68,13 @@ const TransferProduct = () => {
   const [activeRequest, setActiveRequest] = useState<TransferRequest | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [previewStatus, setPreviewStatus] = useState<ProductIdPreviewStatus>('idle');
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+
+  const canSubmitTransfer =
+    previewStatus === 'found' &&
+    Boolean(selectedRecipient) &&
+    !loading;
 
   const loadRecipients = useCallback(async () => {
     setSearchingRecipients(true);
@@ -113,10 +126,30 @@ const TransferProduct = () => {
     setRejectReason('');
   };
 
-  const openSendModal = (e: React.FormEvent) => {
+  const handlePreviewChange = useCallback(
+    (s: ProductIdPreviewStatus, p: Product | null) => {
+      setPreviewStatus(s);
+      setPreviewProduct(p);
+    },
+    [],
+  );
+
+  const openSendModal = (e: FormEvent) => {
     e.preventDefault();
     if (!productId.trim()) {
       setError('Product ID is required');
+      return;
+    }
+    if (previewStatus === 'loading') {
+      setError('Wait for product details to load, then confirm the product is correct');
+      return;
+    }
+    if (previewStatus !== 'found' || !previewProduct) {
+      setError(
+        previewStatus === 'not_owner'
+          ? 'This product is not under your organization’s custody'
+          : 'Enter a valid product ID and confirm the preview matches your item',
+      );
       return;
     }
     if (!selectedRecipient) {
@@ -210,12 +243,16 @@ const TransferProduct = () => {
         onConfirm={() => void confirmSend()}
         onCancel={closeModal}
       >
-        <div className="rounded-lg border border-neutral-200/80 bg-neutral-50/80 px-3 py-2 text-sm dark:border-neutral-600 dark:bg-neutral-800/50">
-          <p>
-            <span className="text-page-muted">Product:</span>{' '}
-            <span className="font-mono font-medium">{productId.trim()}</span>
-          </p>
-          <p className="mt-1">
+        <div className="space-y-3 text-sm">
+          {previewProduct ? (
+            <TransferProductSummaryBlock product={previewProduct} />
+          ) : (
+            <p>
+              <span className="text-page-muted">Product:</span>{' '}
+              <span className="font-mono font-medium">{productId.trim()}</span>
+            </p>
+          )}
+          <p className="pt-2 border-t border-neutral-200/80 dark:border-neutral-600">
             <span className="text-page-muted">To:</span>{' '}
             <span className="font-medium">{selectedRecipient?.displayName}</span>
           </p>
@@ -297,6 +334,13 @@ const TransferProduct = () => {
               onChange={(e) => setProductId(e.target.value)}
               placeholder="e.g. P-A1"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg dark:bg-neutral-900 dark:border-neutral-600"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <TransferProductIdPreview
+              productId={productId}
+              currentUserId={user?.id}
+              onPreviewChange={handlePreviewChange}
             />
           </div>
 
@@ -388,9 +432,14 @@ const TransferProduct = () => {
             </div>
           )}
 
-          <Button type="submit" disabled={loading || !selectedRecipient} className="w-full">
+          <Button type="submit" disabled={!canSubmitTransfer} className="w-full">
             Send transfer request
           </Button>
+          {productId.trim() && previewStatus !== 'found' && previewStatus !== 'loading' && (
+            <p className="text-xs text-center text-page-muted">
+              Confirm the product preview above before sending.
+            </p>
+          )}
         </form>
         ) : null}
 

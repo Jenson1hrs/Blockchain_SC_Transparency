@@ -5,45 +5,45 @@ import { ScrollReveal } from '../components/ScrollReveal';
 const STEPS = [
   {
     step: 1,
-    icon: '📦',
-    title: 'Create product',
-    body: 'A manufacturer registers the product with batch, expiry, and organization details.',
+    icon: '✨',
+    title: 'Brand registers product',
+    body: 'A skincare manufacturer registers the product with batch, expiry, ingredients, and organization profile details.',
   },
   {
     step: 2,
     icon: '📱',
-    title: 'Generate QR',
-    body: 'VeriChain creates a signed verification link and QR image for the product.',
+    title: 'Generate QR code',
+    body: 'VeriChain creates a signed verification link and QR image shoppers can scan on packaging.',
   },
   {
     step: 3,
     icon: '📤',
     title: 'Request transfer',
-    body: 'The manufacturer sends custody to a distributor. Ownership stays unchanged until acceptance.',
+    body: 'The brand sends custody to a distributor. Ownership stays unchanged until acceptance.',
   },
   {
     step: 4,
     icon: '✅',
     title: 'Accept custody',
-    body: 'The distributor reviews and accepts. The blockchain records the new owner.',
+    body: 'The distributor reviews and accepts. The blockchain records the new owner for traceability.',
   },
   {
     step: 5,
     icon: '🏪',
-    title: 'Retail verification',
-    body: 'Stock moves to a retailer through the same request and accept flow.',
+    title: 'Retail handoff',
+    body: 'Stock moves to a retailer through the same request-and-accept flow before consumer sale.',
   },
   {
     step: 6,
     icon: '🔍',
     title: 'Consumer scan',
-    body: 'Shoppers scan the QR to confirm authenticity before they buy or use the product.',
+    body: 'Shoppers scan the QR to verify authenticity, expiry, ingredients, halal status, and allergy-related alerts.',
   },
   {
     step: 7,
     icon: '⏰',
-    title: 'Inventory and expiry alerts',
-    body: 'Consumers can save verified items and receive expiry and safety reminders.',
+    title: 'Inventory & reminders',
+    body: 'Consumers can save verified skincare items and receive expiry and safety reminders.',
   },
 ];
 
@@ -51,7 +51,7 @@ export default function HowItWorksPage() {
   return (
     <InfoPageLayout
       title="How It Works"
-      subtitle="Seven steps from product registration to consumer confidence."
+      subtitle="From skincare brand registration to consumer verification in seven steps."
     >
       <div className="relative max-w-5xl mx-auto">
         <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-gradient-to-b from-primary-300/0 via-primary-400/60 to-primary-300/0 dark:via-primary-600/70" />

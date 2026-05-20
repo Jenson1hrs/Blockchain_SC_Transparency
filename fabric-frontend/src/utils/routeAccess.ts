@@ -20,14 +20,16 @@ const ROUTE_ROLE_RULES: { prefix: string; roles: UserRole[] }[] = [
   { prefix: '/regulator/products', roles: ['regulator'] },
   { prefix: '/regulator/transparency', roles: ['regulator'] },
   { prefix: '/my-products', roles: ['manufacturer'] },
+  { prefix: '/manufacturer/complaints', roles: ['manufacturer'] },
   { prefix: '/assigned-products', roles: ['distributor', 'retailer'] },
   { prefix: '/inventory', roles: ['consumer'] },
+  { prefix: '/my-reports', roles: ALL_ROLES },
   { prefix: '/create', roles: ['admin', 'manufacturer'] },
   { prefix: '/transfer', roles: ['admin', 'manufacturer', 'distributor', 'retailer'] },
   { prefix: '/location', roles: ['admin', 'distributor', 'retailer'] },
   {
     prefix: '/expiring',
-    roles: ['admin', 'distributor', 'retailer', 'consumer', 'regulator'],
+    roles: ['admin', 'manufacturer', 'distributor', 'retailer', 'consumer', 'regulator'],
   },
 ];
 

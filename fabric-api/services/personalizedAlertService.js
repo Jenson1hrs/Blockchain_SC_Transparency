@@ -45,8 +45,23 @@ function assessPersonalizedRisk(userRow, product) {
     }
   }
 
-  if (dietary === 'halal' && halal && !halal.includes('halal')) {
-    return { severity: 'warning', reason: 'halal' };
+  if (dietary === 'halal') {
+    const h = halal.trim();
+    if (!h || h === 'unknown' || h === 'none') {
+      return { severity: 'warning', reason: 'halal' };
+    }
+    if (
+      h === 'non halal' ||
+      h.includes('non halal') ||
+      h.includes('non-halal') ||
+      h === 'vegeterian' ||
+      h === 'vegetarian'
+    ) {
+      return { severity: 'warning', reason: 'halal' };
+    }
+    if (h !== 'halal') {
+      return { severity: 'warning', reason: 'halal' };
+    }
   }
 
   return null;

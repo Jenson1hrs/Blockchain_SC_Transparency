@@ -26,20 +26,27 @@ export function mapHistoryToTimeline(
     }));
   }
 
-  return (data as ProductHistory[]).map((entry, index) => ({
+  return (data as ProductHistory[]).map((entry, index) => {
+    const status = entry.data?.status ?? '';
+    const statusLower = String(status).toLowerCase();
+    let label = 'Ownership Transferred';
+    if (status === 'Manufactured') label = 'Product Created';
+    else if (statusLower === 'received by distributor') label = 'Received by Distributor';
+    else if (statusLower === 'received by retailer') label = 'Received by Retailer';
+    else if (statusLower === 'retail ready') label = 'Retail Ready';
+    else if (statusLower === 'in transit') label = 'In Transit';
+    else if (status === 'Delivered') label = 'Received by Retailer';
+
+    return {
     id: entry.txId ? `chain-${entry.txId}` : `chain-legacy-${index}`,
     source: 'on-chain' as const,
-    label:
-      entry.data?.status === 'Manufactured'
-        ? 'Product Created'
-        : entry.data?.status === 'In Transit' || entry.data?.status === 'Delivered'
-          ? 'Ownership Transferred'
-          : 'Location Updated',
-    status: entry.data?.status ?? 'Unknown',
+    label,
+    status: status || 'Unknown',
     timestamp: formatHistoryTimestamp(entry),
     location: entry.data?.location,
     actor: entry.data?.owner,
     notes: entry.txId ? `On-chain transaction ${entry.txId.slice(0, 16)}…` : 'On-chain Event',
     txId: entry.txId,
-  }));
+  };
+  });
 }

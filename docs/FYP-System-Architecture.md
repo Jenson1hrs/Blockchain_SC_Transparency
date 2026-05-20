@@ -1,6 +1,6 @@
 # Final Year Project — System Architecture Diagrams
 
-**Project title:** Blockchain-Based Anti-Counterfeit and Smart Inventory Management System using Hyperledger Fabric  
+**Project title:** Blockchain-Based Cosmetics & Skincare Product Authentication for SME Manufacturers and Consumers (Hyperledger Fabric)  
 
 This markdown file contains **two Mermaid diagrams**: (1) main layered architecture and (2) QR verification workflow. Preview with:
 
@@ -12,7 +12,7 @@ This markdown file contains **two Mermaid diagrams**: (1) main layered architect
 
 ## 1. Main System Architecture Diagram
 
-Shows **user roles**, **frontend**, **backend**, split **on-chain (Fabric)** vs **off-chain (PostgreSQL)**, and **high-level QR verification paths**.
+Shows **user roles** (primary: manufacturer/brand and consumer; supporting: distributor, retailer, regulator, admin), **frontend**, **backend**, split **on-chain (Fabric)** vs **off-chain (PostgreSQL)**, and **high-level QR verification** for cosmetics/skincare products.
 
 ```mermaid
 flowchart TB
@@ -68,7 +68,7 @@ flowchart TB
     PG["Relational database"]
     OFF_A["User accounts • Preferences"]
     OFF_B["Expiry dates • Inventory data"]
-    OFF_C["Images • Ingredients • Allergy info • Usage instructions"]
+    OFF_C["Images • Ingredients • Allergy • Halal • Usage • Expiry"]
     PG --- OFF_A
     PG --- OFF_B
     PG --- OFF_C

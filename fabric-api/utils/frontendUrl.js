@@ -11,6 +11,11 @@ function getFrontendBase() {
             '[qr] FRONTEND_URL uses localhost. Phone scanners cannot open this URL — use your LAN IP for mobile testing.'
         );
     }
+    if (!/^https?:\/\/[^/]+:\d+/.test(frontendBase)) {
+        console.warn(
+            '[qr] FRONTEND_URL has no port (e.g. :5173). Phone QR links may fail — use http://<LAN-IP>:5173'
+        );
+    }
     return frontendBase;
 }
 

@@ -13,6 +13,9 @@ import {
   ProductStatusBadge,
   ExpiryBadge,
   PersonalizedAlertsPanel,
+  ConsumerVerificationSummary,
+  ProductComplaintForm,
+  ProductTrustPathSummary,
 } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { addToUserInventory } from '../api/inventoryService';
@@ -174,8 +177,9 @@ const QRVerifyPage = () => {
   if (state.kind === 'fake') {
     return (
       <AppShell title="QR Verification" subtitle="Validation failed">
-        <div className="max-w-lg mx-auto animate-fade-up">
-          <div className="card p-8 text-center">
+        <div className="max-w-4xl mx-auto space-y-6 animate-fade-up">
+          <ConsumerVerificationSummary verificationLevel="failed" />
+          <div className="card p-8 text-center max-w-lg mx-auto">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-danger-100 text-danger-600 rounded-full mb-6">
               <svg
                 className="w-8 h-8"
@@ -207,6 +211,12 @@ const QRVerifyPage = () => {
               </Button>
             </div>
           </div>
+          {routeProductId && (
+            <ProductComplaintForm
+              productId={decodeURIComponent(routeProductId)}
+              className="max-w-lg mx-auto"
+            />
+          )}
         </div>
       </AppShell>
     );
@@ -345,6 +355,12 @@ const QRVerifyPage = () => {
           </div>
         )}
 
+        <ConsumerVerificationSummary
+          verificationLevel={state.kind === 'authentic' ? 'full' : 'limited'}
+          product={product}
+          hasSupplyChainHistory={history.length > 0}
+        />
+
         {/* Product Card */}
         <ProductCard
           product={{
@@ -377,6 +393,8 @@ const QRVerifyPage = () => {
         />
 
         <PersonalizedAlertsPanel product={product} user={user} />
+
+        <ProductComplaintForm productId={product.productId} productName={product.name} />
 
         {inventoryErr && (
           <Alert type="error">
@@ -524,15 +542,21 @@ const QRVerifyPage = () => {
           </div>
         </div>
 
-        {/* Product History */}
-        {history.length > 0 && (
-          <div className="card p-8">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
-              Supply Chain History
-            </h3>
+        {/* Supply chain trust path + history */}
+        <div className="card p-8 space-y-6">
+          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+            Supply Chain History
+          </h3>
+          <ProductTrustPathSummary product={product} history={history} />
+          {history.length > 0 ? (
             <ProductTimeline history={history} />
-          </div>
-        )}
+          ) : (
+            <p className="text-sm text-page-muted">
+              No detailed timeline events are recorded yet. The summary above is based on current
+              product custody data.
+            </p>
+          )}
+        </div>
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">

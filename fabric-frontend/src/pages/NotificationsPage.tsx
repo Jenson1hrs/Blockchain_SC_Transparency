@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { clsx } from 'clsx';
 import AppShell from '../components/AppShell';
 import { useRolePageMeta } from '../hooks/useRolePageMeta';
+import { useAuth } from '../context/AuthContext';
 import { Button } from '../components';
+import { notificationDetailLink } from '../utils/notificationLinks';
 import {
   getNotifications,
   markAllNotificationsRead,
@@ -47,6 +49,7 @@ function formatDateTime(iso: string) {
 
 export default function NotificationsPage() {
   const pageMeta = useRolePageMeta('notifications');
+  const { user } = useAuth();
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -190,6 +193,7 @@ export default function NotificationsPage() {
           <ul className="space-y-3">
             {items.map((n) => {
               const styles = severityStyles[n.severity] ?? severityStyles.info;
+              const detailLink = notificationDetailLink(n, user?.role ?? null);
               return (
                 <li
                   key={n.id}
@@ -219,14 +223,13 @@ export default function NotificationsPage() {
                       </div>
                       <p className="text-sm text-page-body leading-relaxed">{n.message}</p>
                       <p className="mt-2 text-xs text-page-muted">{formatDateTime(n.createdAt)}</p>
-                      {n.relatedProductId && (
+                      {detailLink && (
                         <p className="mt-1 text-xs">
-                          <span className="text-page-muted">Product: </span>
                           <Link
-                            to={`/verify/${encodeURIComponent(n.relatedProductId)}`}
-                            className="font-mono text-primary-600 hover:underline dark:text-primary-400"
+                            to={detailLink.to}
+                            className="font-medium text-primary-600 hover:underline dark:text-primary-400"
                           >
-                            {n.relatedProductId}
+                            {detailLink.label}
                           </Link>
                         </p>
                       )}

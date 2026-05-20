@@ -14,6 +14,7 @@ import {
   acceptTransferRequest,
   rejectTransferRequest,
 } from '../api/transferRequestService';
+import { ManufacturerBrandDashboard } from './ManufacturerBrandDashboard';
 
 function SectionHeading({ title, helper }: { title: string; helper?: string }) {
   return (
@@ -110,7 +111,7 @@ function TransferCountRow({ pending, accepted, rejected }: { pending: number; ac
   );
 }
 
-function TransferRequestTable({
+export function TransferRequestTable({
   requests,
   direction,
   showIncomingActions,
@@ -345,44 +346,7 @@ const iconClock = (
 );
 
 export function ManufacturerSupplyChainAnalytics({ data }: { data: ManufacturerDashboardSummary }) {
-  const metaPct = data.metadataCompletionPercentage ?? data.metadataCompletionPercent ?? 100;
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-      <SectionHeading
-        title="Product origin"
-        helper="Products you registered. Custody on-chain moves to distributors after they accept outbound requests."
-      />
-      <AnalyticsCard title="Products Created" description="Registered under your manufacturer account." tone="primary" icon={iconBox}>
-        <BigNumber>{data.productsCreatedCount}</BigNumber>
-      </AnalyticsCard>
-      <AnalyticsCard title="Still In Custody" description="Products you still hold on-chain." tone="success" icon={iconBox}>
-        <BigNumber>{data.productsStillInCustodyCount}</BigNumber>
-      </AnalyticsCard>
-      <SectionHeading
-        title="Outbound transfers"
-        helper="Send custody downstream to distributors. Manufacturers do not receive inbound transfers."
-      />
-      <AnalyticsCard title="Outbound Pending" description="Awaiting distributor response." tone="warning" icon={iconTruck}>
-        <BigNumber>{data.outboundPendingCount}</BigNumber>
-      </AnalyticsCard>
-      <AnalyticsCard title="Outbound Accepted" description="Distributor accepted on-chain custody." tone="success" icon={iconTruck}>
-        <BigNumber>{data.outboundAcceptedCount}</BigNumber>
-      </AnalyticsCard>
-      <AnalyticsCard title="Outbound Rejected" description="Offer declined; you retain custody." tone="danger" icon={iconTruck}>
-        <BigNumber>{data.outboundRejectedCount}</BigNumber>
-      </AnalyticsCard>
-      <AnalyticsCard title="Recent Outbound Requests" description="Latest requests you initiated." tone="primary" icon={iconRefresh} className="md:col-span-2 xl:col-span-3">
-        <TransferRequestTable requests={data.recentOutboundRequests} direction="outbound" />
-      </AnalyticsCard>
-      <SectionHeading title="Metadata quality" helper="Incomplete metadata affects consumer trust and oversight." />
-      <AnalyticsCard title="Metadata Completion" description="Average field completeness." tone="success" icon={iconLayers}>
-        <BigNumber>{metaPct}%</BigNumber>
-      </AnalyticsCard>
-      <AnalyticsCard title="Missing Metadata" description="Products missing required fields." tone="warning" icon={iconLayers}>
-        <BigNumber>{data.missingMetadataCount}</BigNumber>
-      </AnalyticsCard>
-    </div>
-  );
+  return <ManufacturerBrandDashboard data={data} />;
 }
 
 export function DistributorSupplyChainAnalytics({

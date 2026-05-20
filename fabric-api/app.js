@@ -13,6 +13,7 @@ const regulatorRoutes = require('./routes/regulatorRoutes');
 const userRoutes = require('./routes/userRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
+const complaintRoutes = require('./routes/complaintRoutes');
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.use('/regulator', regulatorRoutes);
 app.use('/users', userRoutes);
 app.use('/notifications', notificationRoutes);
 app.use('/feedback', feedbackRoutes);
+app.use('/complaints', complaintRoutes);
 app.use('/', productRoutes);
 
 const PORT = process.env.PORT || 3000;

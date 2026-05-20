@@ -1,6 +1,7 @@
 import React from 'react';
 import { ProductStatusBadge } from './ProductStatusBadge';
 import type { ProductTimelineEntry } from '../types';
+import { getTimelineDisplay } from '../utils/timelineDisplay';
 
 interface ProductTimelineProps {
   history: ProductTimelineEntry[];
@@ -38,58 +39,65 @@ function sourceBadge(source: ProductTimelineEntry['source']) {
 export const ProductTimeline: React.FC<ProductTimelineProps> = ({ history, className }) => {
   return (
     <div className={`space-y-4 ${className || ''}`}>
-      {history.map((entry, index) => (
-        <div key={entry.id} className="flex gap-4">
-          <div className="flex flex-col items-center">
-            <div
-              className={`w-3 h-3 rounded-full border-2 border-white dark:border-neutral-800 shadow-sm ${
-                entry.source === 'personal'
-                  ? 'bg-violet-500'
-                  : entry.source === 'workflow'
-                    ? 'bg-amber-500'
-                    : 'bg-primary-500'
-              }`}
-            />
-            {index < history.length - 1 && (
-              <div className="w-px flex-1 min-h-[3rem] bg-neutral-200 dark:bg-neutral-700 mt-2" />
-            )}
-          </div>
+      {history.map((entry, index) => {
+        const display = getTimelineDisplay(entry);
 
-          <div className="flex-1 pb-6">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              {sourceBadge(entry.source)}
-              <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                {entry.label}
-              </span>
-              {entry.source === 'on-chain' &&
-                entry.status && (
-                  <ProductStatusBadge
-                    status={entry.status}
-                  />
-                )}
-              <span className="text-sm text-neutral-500 dark:text-neutral-300">
-                {formatTimestamp(entry.timestamp)}
-              </span>
+        return (
+          <div key={entry.id} className="flex gap-4">
+            <div className="flex flex-col items-center">
+              <div
+                className={`w-3 h-3 rounded-full border-2 border-white dark:border-neutral-800 shadow-sm ${
+                  entry.source === 'personal'
+                    ? 'bg-violet-500'
+                    : entry.source === 'workflow'
+                      ? 'bg-amber-500'
+                      : 'bg-primary-500'
+                }`}
+              />
+              {index < history.length - 1 && (
+                <div className="w-px flex-1 min-h-[3rem] bg-neutral-200 dark:bg-neutral-700 mt-2" />
+              )}
             </div>
 
-            {entry.location && (
-              <p className="text-sm text-neutral-700 dark:text-neutral-200 mb-1">
-                <span className="font-medium">Location:</span> {entry.location}
-              </p>
-            )}
+            <div className="flex-1 pb-6">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                {sourceBadge(entry.source)}
+                <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                  {display.title}
+                </span>
+                {display.showStatusBadge && entry.status && (
+                  <ProductStatusBadge status={entry.status} />
+                )}
+                <span className="text-sm text-neutral-500 dark:text-neutral-300 w-full sm:w-auto sm:ml-auto">
+                  {formatTimestamp(entry.timestamp)}
+                </span>
+              </div>
 
-            {entry.actor && (
-              <p className="text-sm text-neutral-700 dark:text-neutral-200 mb-1">
-                <span className="font-medium">Actor:</span> {entry.actor}
-              </p>
-            )}
+              {display.explanation && (
+                <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-2 leading-relaxed">
+                  {display.explanation}
+                </p>
+              )}
 
-            {entry.notes && (
-              <p className="text-sm text-neutral-600 dark:text-neutral-200">{entry.notes}</p>
-            )}
+              {entry.location && (
+                <p className="text-sm text-neutral-700 dark:text-neutral-200 mb-1">
+                  <span className="font-medium">Location:</span> {entry.location}
+                </p>
+              )}
+
+              {display.showActorLine && entry.actor && (
+                <p className="text-sm text-neutral-700 dark:text-neutral-200 mb-1">
+                  <span className="font-medium">Actor:</span> {entry.actor}
+                </p>
+              )}
+
+              {display.showNotesLine && entry.notes && (
+                <p className="text-sm text-neutral-600 dark:text-neutral-200">{entry.notes}</p>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

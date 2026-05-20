@@ -116,8 +116,18 @@ function matchesDietaryConflict(dietaryPreference, ingredientsText, halalStatus)
     if (meatTerms.some((t) => hay.includes(t))) return true;
   }
   if (dietary === 'halal' && halalStatus) {
-    const h = String(halalStatus).toLowerCase();
-    if (h && !h.includes('halal')) return true;
+    const h = String(halalStatus).trim().toLowerCase();
+    if (!h || h === 'unknown' || h === 'none') return true;
+    if (
+      h === 'non halal' ||
+      h.includes('non halal') ||
+      h.includes('non-halal') ||
+      h === 'vegeterian' ||
+      h === 'vegetarian'
+    ) {
+      return true;
+    }
+    if (h !== 'halal') return true;
   }
   return false;
 }
@@ -278,6 +288,13 @@ async function getManufacturerSummary(manufacturerUserId) {
             image_url, ingredients, allergy_info, halal_status, usage_instructions
      FROM products
      WHERE ${where.sql}
+       AND (
+         image_url IS NULL OR TRIM(image_url) = ''
+         OR ingredients IS NULL OR TRIM(ingredients) = ''
+         OR allergy_info IS NULL OR TRIM(allergy_info) = ''
+         OR usage_instructions IS NULL OR TRIM(usage_instructions) = ''
+         OR halal_status IS NULL OR TRIM(halal_status) = ''
+       )
      ORDER BY timestamp DESC NULLS LAST
      LIMIT 8`,
     where.params

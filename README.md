@@ -1,6 +1,6 @@
-# VeriChain — Blockchain-Powered Product Authentication System
+# VeriChain — Cosmetics & Skincare Product Authentication
 
-**Final Year Project** · Blockchain-Based Anti-Counterfeit and Smart Inventory Management using Hyperledger Fabric
+**Final Year Project** · Blockchain-based authentication for cosmetics and skincare SMEs and consumers, using Hyperledger Fabric for traceability
 
 **Platform name:** VeriChain
 
@@ -46,14 +46,17 @@ You should see a list of containers (or an empty list without errors). If this f
 ```bash
 cd ~/fabric-project/fabric-samples/test-network
 ./network.sh up -c supplychannel
+./network.sh createChannel -c supplychannel
 ```
+
+> **Note:** `./network.sh up` only starts Docker containers (peers, orderer). It does **not** create the channel. If you skip `createChannel`, product create will fail with `supplychannel error: access denied`.
 
 | Fabric setting | Value in this project |
 |----------------|------------------------|
 | Channel | `supplychannel` |
 | Chaincode name | `anticounterfeit` |
 
-**Deploy chaincode only if needed** (first setup, after `./network.sh down`, or if create product / blockchain calls fail):
+**Deploy chaincode** (required after first setup, after `./network.sh down`, or if create product / blockchain calls fail):
 
 ```bash
 cd ~/fabric-project/fabric-samples/test-network
@@ -137,7 +140,8 @@ Keep `npm run dev -- --host 0.0.0.0` so Vite accepts connections from the phone.
 | Problem | Likely cause | Fix |
 |---------|----------------|-----|
 | `docker ps` fails | Docker Desktop not running | Start Docker Desktop, wait, retry |
-| Fabric / chaincode errors | Network not up or chaincode not deployed | Run `./network.sh up -c supplychannel` from `fabric-samples/test-network/`; redeploy chaincode if needed |
+| `supplychannel error: access denied` | Channel not created (`up` alone is not enough) | Run `./network.sh createChannel -c supplychannel`, then deploy chaincode |
+| Fabric / chaincode errors | Network not up or chaincode not deployed | `up` + `createChannel` + `deployCC` from `fabric-samples/test-network/` |
 | `./network.sh: No such file` | Wrong folder | `cd ~/fabric-project/fabric-samples/test-network` first |
 | Backend DB error | PostgreSQL stopped or wrong credentials | Start PostgreSQL; check `fabric-api/config/db.js` |
 | `GET /health` fails | Backend not started | `cd fabric-api && npm start` |
@@ -151,13 +155,15 @@ More detail: [Troubleshooting](#troubleshooting).
 
 ## Project overview
 
-**VeriChain** combines:
+**VeriChain** helps **cosmetics and skincare SME manufacturers** protect brand trust and helps **consumers** verify products before use. Supporting roles (distributor, retailer, regulator, admin) provide traceability, governance, and platform operation.
+
+The platform combines:
 
 - **Hyperledger Fabric** — on-chain product traceability (lifecycle, custody, history)
-- **PostgreSQL** — off-chain application data (users, metadata, transfers, inventory, notifications)
+- **PostgreSQL** — off-chain skincare metadata (ingredients, allergy notes, halal status, usage instructions, images, expiry)
 - **React + Express** — web UI and REST API with JWT and role-based access
 
-**Main features:** QR verification (with tampered-hash detection), supply-chain transfers, consumer inventory, expiry and safety alerts, regulator organization review, admin monitoring, feedback (Likert scale).
+**Main features:** QR verification (with tampered-hash detection), product registration with safety metadata, supply-chain transfers, consumer inventory, expiry and allergy/halal alerts, regulator organization review, admin monitoring, feedback (Likert scale).
 
 **Architecture diagrams:** [`docs/FYP-System-Architecture.md`](docs/FYP-System-Architecture.md)
 
@@ -245,9 +251,11 @@ Edit this file to match your local PostgreSQL user and password.
 | **Normal dev (laptop)** | Default `/api` — Vite proxy to port 3000; no `VITE_API_BASE_URL` required |
 | **Phone / LAN testing** | Set `FRONTEND_URL` in backend `.env`; optionally `VITE_API_BASE_URL` in `fabric-frontend/.env` |
 
-### Demo accounts (seed script)
+### Demo accounts
 
-Admin and regulator cannot self-register. From **repo root**:
+#### Privileged accounts (seed script only)
+
+Admin and regulator **cannot** self-register. From **repo root**:
 
 ```bash
 node scripts/seed-demo-privileged-users.js
@@ -259,6 +267,14 @@ node scripts/seed-demo-privileged-users.js
 | Regulator | `regulator@test.com` | `Regulator123!` |
 
 Demo use only — not for production.
+
+#### Supply-chain and consumer accounts (manual registration)
+
+**Do not seed** manufacturer, distributor, retailer, or consumer accounts. Register them through the normal UI (**Register** → choose role → sign in), then open **Profile** and complete organization details (company name, description, location, website, logo).
+
+This demonstrates real onboarding workflow and avoids hard-coding demo companies in the database.
+
+See [GlowCare demo scenario](#glowcare-demo-scenario-documentation-only) below for suggested account details and product examples (documentation only — enter them yourself in the UI).
 
 ### Landing page video (local only)
 
@@ -347,30 +363,91 @@ Follow [Quick demo startup](#quick-demo-startup-on-my-laptop) (Steps 1–4).
 
 ## User roles
 
-| Role | Main responsibility |
-|------|---------------------|
-| Consumer | Verify products, inventory, expiry / safety alerts |
-| Manufacturer | Create products, QR codes, transfers to distributors |
-| Distributor | Accept transfers, update location, send to retailers |
-| Retailer | Accept retail custody |
-| Regulator | Approve or flag organizations |
-| Admin | Users list, system health (API / DB / Fabric) |
+| Role | Focus | Main responsibility |
+|------|--------|---------------------|
+| **Manufacturer / brand** | Primary | Register skincare products, publish verified metadata, generate QR codes, protect brand trust |
+| **Consumer** | Primary | Scan QR to verify authenticity, check expiry/ingredients/halal/allergy alerts, save to inventory |
+| Distributor | Supporting | Traceability — accept transfers, update logistics locations |
+| Retailer | Supporting | Traceability — retail custody, expiry watch, verify before sale |
+| Regulator | Supporting | Governance — organization verification, metadata oversight |
+| Admin | Supporting | Platform operation — users, API / DB / Fabric health |
 
 Public registration: consumer, manufacturer, distributor, retailer.
 
 ---
 
+## GlowCare demo scenario (documentation only)
+
+The following is an **example evaluation narrative**. Accounts are registered manually through the UI; products are created manually while Fabric is running. Nothing below is seeded or hard-coded by the application.
+
+### Suggested supply-chain accounts (register via UI)
+
+| Role | Email | Password | Company name | Location |
+|------|--------|----------|--------------|----------|
+| Manufacturer | `glowcare.mfg@test.com` | `123456` | GlowCare Naturals Sdn. Bhd. | Shah Alam, Selangor, Malaysia |
+| Distributor | `beautylink.dist@test.com` | `123456` | BeautyLink Distribution Sdn. Bhd. | Petaling Jaya, Selangor, Malaysia |
+| Retailer | `glowmart.retail@test.com` | `123456` | GlowMart Retail Sdn. Bhd. | Kuala Lumpur, Malaysia |
+
+After registration, sign in to each account and set **Profile → Organization** fields (description, website, logo) to match your demo story.
+
+**Example organization descriptions (paste in Profile):**
+
+- **GlowCare Naturals Sdn. Bhd.** — Malaysian SME skincare brand focused on transparent, safe, and consumer-friendly cosmetic products. Website: `https://www.glowcare-demo.com`
+- **BeautyLink Distribution Sdn. Bhd.** — Skincare and cosmetics distributor supporting verified product movement between brands and retail partners. Website: `https://www.beautylink-demo.com`
+- **GlowMart Retail Sdn. Bhd.** — Retail store for verified skincare and cosmetic products with consumer-facing authenticity support. Website: `https://www.glowmart-demo.com`
+
+### Suggested demo products (create via manufacturer UI)
+
+Create these while logged in as **GlowCare** with Fabric and the API running. Fill all metadata fields for best regulator/manufacturer completeness scores.
+
+**1. GlowCare Vitamin C Brightening Serum**
+
+| Field | Example value |
+|-------|----------------|
+| Product ID | `GC-VS-001` |
+| Batch | `GC2026-VS-A1` |
+| Expiry | `2027-06-30` |
+| Halal status | `Halal` (dropdown: Halal, Non Halal, Vegeterian, Unknown, None) |
+| Ingredients | Aqua, Ascorbic Acid 10%, Niacinamide, Hyaluronic Acid, Glycerin, Tocopherol, Phenoxyethanol |
+| Allergy info | Contains fragrance. Patch test before full use. |
+| Usage | Apply 2–3 drops to cleansed face morning and night. Use sunscreen during the day. |
+
+**2. GlowCare Hydrating Face Moisturizer**
+
+| Field | Example value |
+|-------|----------------|
+| Product ID | `GC-MC-002` |
+| Batch | `GC2026-MC-B2` |
+| Expiry | `2027-03-15` |
+| Halal status | `Halal` (dropdown: Halal, Non Halal, Vegeterian, Unknown, None) |
+| Ingredients | Aqua, Glycerin, Shea Butter, Ceramide NP, Hyaluronic Acid |
+| Allergy info | Contains shea butter. |
+| Usage | Apply after cleansing and serum. Use morning and night. |
+
+**3. GlowCare Gentle Daily Sunscreen SPF50**
+
+| Field | Example value |
+|-------|----------------|
+| Product ID | `GC-SS-003` |
+| Batch | `GC2026-SS-C3` |
+| Expiry | `2026-12-31` |
+| Halal status | `Halal` (dropdown: Halal, Non Halal, Vegeterian, Unknown, None) |
+| Ingredients | Aqua, Zinc Oxide, Titanium Dioxide, Glycerin, Aloe Vera Extract |
+| Allergy info | Patch test before full use. |
+| Usage | Apply evenly 15 minutes before sun exposure. Reapply every 2–3 hours. |
+
+---
+
 ## Suggested demo flow (evaluation)
 
-1. Login or register as **manufacturer**.
-2. **Create product** (metadata + image).
-3. Open **QR code** page.
-4. **Verify** product (browser or phone scan).
-5. **Tamper test** — change hash in URL → warning shown.
-6. **Transfer** manufacturer → distributor → retailer (accept at each step).
-7. **Consumer** — verify, add to inventory, view alerts.
-8. **Regulator** — organization review.
-9. **Admin** — users and system status.
+1. Show **manual registration** — supply-chain accounts created via UI (not seed scripts).
+2. **Regulator** — verify **GlowCare** organization (and optionally BeautyLink / GlowMart).
+3. **Manufacturer (GlowCare)** — create a product (e.g. `GC-VS-001`) with full skincare metadata + image.
+4. Open **QR code** page and scan from phone (set `FRONTEND_URL` to LAN IP if needed).
+5. **Consumer** — verify authenticity, review ingredients/expiry/halal, save to inventory.
+6. **Tamper test** — change hash in QR URL → warning shown (detects tampered **links**, not physical label copying).
+7. **Transfer** GlowCare → BeautyLink → GlowMart (accept at each step); show supply-chain history.
+8. **Admin** — users and system status.
 
 ---
 

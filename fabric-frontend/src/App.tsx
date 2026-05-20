@@ -15,6 +15,8 @@ import Profile from './pages/Profile';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminSystemPage from './pages/AdminSystemPage';
 import ManufacturerProductsPage from './pages/ManufacturerProductsPage';
+import ManufacturerComplaintsPage from './pages/ManufacturerComplaintsPage';
+import MyProductReportsPage from './pages/MyProductReportsPage';
 import AssignedProductsPage from './pages/AssignedProductsPage';
 import OrganizationProfile from './pages/OrganizationProfile';
 import OrganizationManagement from './pages/OrganizationManagement';
@@ -34,7 +36,14 @@ const ALL_ROLES: UserRole[] = ['admin', 'manufacturer', 'distributor', 'retailer
 const REGULATOR_ONLY: UserRole[] = ['regulator'];
 const ADMIN_ONLY: UserRole[] = ['admin'];
 const INVENTORY_ROLES: UserRole[] = ['consumer'];
-const EXPIRING_ROLES: UserRole[] = ['admin', 'distributor', 'retailer', 'consumer', 'regulator'];
+const EXPIRING_ROLES: UserRole[] = [
+  'admin',
+  'manufacturer',
+  'distributor',
+  'retailer',
+  'consumer',
+  'regulator',
+];
 const CREATE_ROLES: UserRole[] = ['admin', 'manufacturer'];
 const MANUFACTURER_ONLY: UserRole[] = ['manufacturer'];
 const TRANSFER_ROLES: UserRole[] = ['admin', 'manufacturer', 'distributor', 'retailer'];
@@ -111,6 +120,22 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={MANUFACTURER_ONLY}>
               <ManufacturerProductsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/manufacturer/complaints"
+          element={
+            <ProtectedRoute allowedRoles={MANUFACTURER_ONLY}>
+              <ManufacturerComplaintsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-reports"
+          element={
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
+              <MyProductReportsPage />
             </ProtectedRoute>
           }
         />

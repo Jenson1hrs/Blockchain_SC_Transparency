@@ -296,6 +296,33 @@ export const transferProduct = async (
   }
 };
 
+export type UpdateProductMetadataPayload = {
+  imageUrl?: string | null;
+  expiryDate?: string | null;
+  ingredients?: string | null;
+  allergyInfo?: string | null;
+  halalStatus?: string | null;
+  usageInstructions?: string | null;
+};
+
+export async function updateProductMetadata(
+  productId: string,
+  payload: UpdateProductMetadataPayload,
+): Promise<Product> {
+  const path = `products/${encodeURIComponent(productId)}/metadata`;
+  try {
+    const response = await apiClient.patch<ApiResponse<Record<string, unknown>>>(path, payload);
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to update metadata');
+    }
+    const p = normalizeProduct(response.data.data);
+    if (!p) throw new Error('Invalid metadata response');
+    return p;
+  } catch (e) {
+    throw new Error(formatApiError(e, path));
+  }
+}
+
 export async function fetchAssignedProducts(limit = 100): Promise<Product[]> {
   const path = '/products/assigned';
   try {

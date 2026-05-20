@@ -197,6 +197,95 @@ async function onFakeQrDetected(productId) {
   );
 }
 
+function productDisplayLabel(product, productId) {
+  const pid = String(productId);
+  if (product?.name != null && String(product.name).trim() !== '') {
+    return String(product.name).trim();
+  }
+  return pid;
+}
+
+async function onProductComplaintReceived({
+  manufacturerUserId,
+  productId,
+  complaintId,
+}) {
+  const mfgId = manufacturerUserId != null ? Number(manufacturerUserId) : NaN;
+  if (!Number.isFinite(mfgId) || !productId) return;
+
+  const { getProductFromDB } = require('./dbService');
+  const product = await getProductFromDB(String(productId));
+  const label = productDisplayLabel(product, productId);
+
+  await notificationService.createNotification({
+    userId: mfgId,
+    type: 'product_complaint_received',
+    title: 'New product issue report',
+    message: `New product issue report received for ${label}.`,
+    severity: 'warning',
+    relatedProductId: String(productId),
+    relatedEntityId: complaintId != null ? Number(complaintId) : null,
+  });
+}
+
+/** Logged-in reporter only (e.g. consumer) — guests have no user_id to notify. */
+async function onProductComplaintSubmitted({ reporterUserId, productId, complaintId }) {
+  const uid = reporterUserId != null ? Number(reporterUserId) : NaN;
+  if (!Number.isFinite(uid) || !productId) return;
+
+  const { getProductFromDB } = require('./dbService');
+  const product = await getProductFromDB(String(productId));
+  const label = productDisplayLabel(product, productId);
+
+  await notificationService.createNotification({
+    userId: uid,
+    type: 'product_complaint_submitted',
+    title: 'Report sent to brand',
+    message: `Your product issue report for ${label} was sent to the manufacturer.`,
+    severity: 'success',
+    relatedProductId: String(productId),
+    relatedEntityId: complaintId != null ? Number(complaintId) : null,
+  });
+}
+
+async function onProductComplaintStatusUpdated({
+  reporterUserId,
+  productId,
+  complaintId,
+  status,
+  manufacturerResponse,
+}) {
+  const uid = reporterUserId != null ? Number(reporterUserId) : NaN;
+  if (!Number.isFinite(uid) || !productId) return;
+
+  const nextStatus = String(status ?? '').trim();
+  if (nextStatus !== 'reviewed' && nextStatus !== 'resolved') return;
+
+  const { getProductFromDB } = require('./dbService');
+  const product = await getProductFromDB(String(productId));
+  const label = productDisplayLabel(product, productId);
+
+  const statusLabel = nextStatus === 'resolved' ? 'resolved' : 'reviewed by the brand';
+  let message = `Your report for ${label} was marked ${statusLabel}.`;
+  const response = manufacturerResponse != null ? String(manufacturerResponse).trim() : '';
+  if (response) {
+    const preview = response.length > 160 ? `${response.slice(0, 160)}…` : response;
+    message = `${message} Brand response: ${preview}`;
+  } else {
+    message = `${message} Open My product reports for details.`;
+  }
+
+  await notificationService.createNotification({
+    userId: uid,
+    type: 'product_complaint_status_updated',
+    title: 'Update on your product report',
+    message,
+    severity: nextStatus === 'resolved' ? 'success' : 'info',
+    relatedProductId: String(productId),
+    relatedEntityId: complaintId != null ? Number(complaintId) : null,
+  });
+}
+
 async function onUserRegistered(userName, userEmail, role) {
   await notificationService.notifyUsersByRoles(
     ['admin'],
@@ -223,5 +312,8 @@ module.exports = {
   onOrganizationFlagged,
   onOrganizationUnflagged,
   onFakeQrDetected,
+  onProductComplaintReceived,
+  onProductComplaintSubmitted,
+  onProductComplaintStatusUpdated,
   onUserRegistered,
 };

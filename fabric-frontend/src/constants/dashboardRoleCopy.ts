@@ -4,9 +4,9 @@ import type { UserRole } from '../types';
 export const ROLE_LABEL_PROFESSIONAL: Record<UserRole, string> = {
   admin: 'Platform Administrator',
   regulator: 'Regulatory Authority',
-  manufacturer: 'Verified Manufacturer',
-  distributor: 'Logistics Partner',
-  retailer: 'Retail Operator',
+  manufacturer: 'Skincare brand / manufacturer',
+  distributor: 'Distribution partner',
+  retailer: 'Retail partner',
   consumer: 'Consumer',
 };
 
@@ -14,20 +14,21 @@ export const ROLE_LABEL_PROFESSIONAL: Record<UserRole, string> = {
 export const ROLE_WORKSPACE_TITLE: Record<UserRole, string> = {
   admin: 'Operations Dashboard',
   regulator: 'Compliance & Oversight',
-  manufacturer: 'Manufacturing Workspace',
+  manufacturer: 'Brand protection overview',
   distributor: 'Logistics Workspace',
   retailer: 'Retail Operations',
-  consumer: 'Consumer Safety Hub',
+  consumer: 'Skincare verification hub',
 };
 
 /** One-line AppShell subtitle under the page title. */
 export const ROLE_WORKSPACE_SUBTITLE: Record<UserRole, string> = {
   admin: 'Monitor platform health, user activity, and blockchain connectivity.',
   regulator: 'Govern supply-chain trust, organization verification, and transparency.',
-  manufacturer: 'Register authentic products, issue QR codes, and release custody downstream.',
-  distributor: 'Manage inbound and outbound custody with full traceability.',
-  retailer: 'Prepare store inventory for verification and consumer transparency.',
-  consumer: 'Verify authenticity, track personal inventory, and stay ahead of expiry risks.',
+  manufacturer:
+    'Protect brand trust — monitor product trust, custody accountability, audit readiness, and consumer-facing metadata.',
+  distributor: 'Support traceability with inbound and outbound custody and location updates.',
+  retailer: 'Support traceability with retail custody, expiry monitoring, and pre-sale verification.',
+  consumer: 'Scan QR codes to verify authenticity, review ingredients and expiry, and manage personal inventory.',
 };
 
 /** Trust-oriented badge shown on workspace hero and analytics banners. */
@@ -43,17 +44,17 @@ export const ROLE_TRUST_BADGE: Record<UserRole, string> = {
 /** Primary mission statement in the workspace hero card. */
 export const DASHBOARD_ROLE_HEADING: Record<UserRole, string> = {
   admin:
-    'Oversee infrastructure health, user governance, and synchronized ledger activity across the platform.',
+    'Support platform operation: monitor infrastructure health, user accounts, and blockchain connectivity.',
   regulator:
-    'Review organization compliance, product metadata quality, and end-to-end supply-chain transparency.',
+    'Support governance: review organization trust, product metadata quality, and platform transparency.',
   manufacturer:
-    'Establish product authenticity at origin, generate traceable QR codes, and transfer custody to distributors.',
+    'See how your skincare brand is protected: registered products, trust metadata, QR readiness, custody, and distributor handoffs.',
   distributor:
-    'Coordinate logistics between manufacturers and retailers with accountable inbound and outbound transfers.',
+    'Support accountable logistics between skincare brands and retailers with traceable transfers and location updates.',
   retailer:
-    'Maintain retail-ready custody, monitor expiry, and enable trustworthy verification before consumer purchase.',
+    'Support store-level traceability, monitor expiry on shelf stock, and help consumers verify products before purchase.',
   consumer:
-    'Confirm product authenticity, manage a personal safety inventory, and receive expiry and dietary alerts.',
+    'Scan QR codes to confirm authenticity, review expiry and ingredient safety, and save products to a personal inventory with alerts.',
 };
 
 /** Context above role analytics grids. */
@@ -63,7 +64,7 @@ export const DASHBOARD_SUPPLY_CHAIN_HELPER: Partial<Record<UserRole, string>> = 
   regulator:
     'Oversight metrics for verified organizations, product metadata quality, and platform transparency indicators.',
   manufacturer:
-    'Track registered products, outbound custody offers, and metadata completeness before release to the chain.',
+    'Brand protection metrics — catalogue health, pending transfers, expiring batches, and downstream custody.',
   distributor:
     'Monitor held inventory, location coverage, and pending inbound or outbound transfer requests.',
   retailer:
@@ -105,7 +106,7 @@ export const FOOTER_ROLE_TAGLINE: Record<UserRole, string> = WORKSPACE_FOOTER;
 export const ROLE_ANALYTICS_TITLE: Record<UserRole, string> = {
   admin: 'Platform analytics',
   regulator: 'Oversight analytics',
-  manufacturer: 'Production & custody',
+  manufacturer: 'Brand protection overview',
   distributor: 'Logistics & transfers',
   retailer: 'Store operations',
   consumer: 'Personal safety',

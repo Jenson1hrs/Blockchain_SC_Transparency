@@ -22,6 +22,12 @@ router.get(
   controller.listAssignedProducts
 );
 router.get('/product/:id', controller.getProduct);
+router.patch(
+  '/products/:id/metadata',
+  authenticateUser,
+  authorizeRoles('manufacturer'),
+  controller.updateManufacturerMetadata
+);
 router.get(
   '/expiring',
   authenticateUser,

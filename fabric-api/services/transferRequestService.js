@@ -333,7 +333,99 @@ function chainEntryLabel(status, prevStatus, { isLocationOnly = false } = {}) {
   if (lower === 'manufactured' || !prevStatus) {
     return 'Product Created';
   }
+  if (lower === 'received by distributor') {
+    return 'Received by Distributor';
+  }
+  if (lower === 'received by retailer') {
+    return 'Received by Retailer';
+  }
+  if (lower === 'retail ready') {
+    return 'Retail Ready';
+  }
+  if (lower === 'in transit') {
+    return 'In Transit';
+  }
   return 'Ownership Transferred';
+}
+
+function milestoneForRecipientRole(role) {
+  const r = String(role || '').toLowerCase();
+  if (r === 'distributor') {
+    return {
+      label: 'Received by Distributor',
+      status: productStatusService.STATUSES.RECEIVED_DISTRIBUTOR,
+      notesSuffix: 'Distributor custody — stock held for downstream retail shipment.',
+    };
+  }
+  if (r === 'retailer') {
+    return {
+      label: 'Received by Retailer',
+      status: productStatusService.STATUSES.RECEIVED_RETAILER,
+      notesSuffix:
+        'Final business custody point — product is at the retailer before consumer sale.',
+    };
+  }
+  return {
+    label: 'Transfer Accepted',
+    status: 'Transfer Accepted',
+    notesSuffix: 'Blockchain custody updated.',
+  };
+}
+
+/** Align on-chain "In Transit" rows with the workflow accept milestone that follows. */
+function enrichTimelineMilestones(timeline, productContext) {
+  if (!timeline?.length) return timeline;
+
+  const accepts = timeline.filter(
+    (e) =>
+      e.source === 'workflow' &&
+      (e.status === productStatusService.STATUSES.RECEIVED_DISTRIBUTOR ||
+        e.status === productStatusService.STATUSES.RECEIVED_RETAILER ||
+        e.label === 'Received by Distributor' ||
+        e.label === 'Received by Retailer'),
+  );
+
+  for (const accept of accepts) {
+    const acceptTs = new Date(accept.timestamp).getTime();
+    if (Number.isNaN(acceptTs)) continue;
+
+    let best = null;
+    let bestDelta = Infinity;
+    for (const entry of timeline) {
+      if (entry.source !== 'on-chain') continue;
+      const st = String(entry.status || '').toLowerCase();
+      if (st !== 'in transit' && st !== 'ownership transferred') continue;
+      const entryTs = new Date(entry.timestamp).getTime();
+      if (Number.isNaN(entryTs) || entryTs > acceptTs) continue;
+      const delta = acceptTs - entryTs;
+      if (delta < bestDelta) {
+        bestDelta = delta;
+        best = entry;
+      }
+    }
+    if (best && bestDelta < 7 * 24 * 60 * 60 * 1000) {
+      best.label = accept.label;
+      best.status = accept.status;
+    }
+  }
+
+  const status = productContext?.status != null ? String(productContext.status).trim() : '';
+
+  if (status.toLowerCase() === productStatusService.STATUSES.RETAIL_READY.toLowerCase()) {
+    for (let i = timeline.length - 1; i >= 0; i -= 1) {
+      const entry = timeline[i];
+      if (entry.source !== 'on-chain') continue;
+      if (entry.label === 'Location Updated' || entry.location) {
+        entry.label = 'Retail Ready';
+        entry.status = productStatusService.STATUSES.RETAIL_READY;
+        entry.notes =
+          'Store or shelf location recorded — available for consumer verification before sale.';
+        break;
+      }
+    }
+  }
+
+  return timeline;
 }
 
 function parseChainTimestamp(entry) {
@@ -348,10 +440,23 @@ function parseChainTimestamp(entry) {
   return new Date(0).toISOString();
 }
 
+async function getProductTimelineContext(productId) {
+  const res = await pool.query(
+    `SELECT status, current_owner_role, current_owner_name
+     FROM products WHERE product_id = $1`,
+    [productId],
+  );
+  return res.rows[0] || null;
+}
+
 async function getWorkflowEventsForProduct(productId) {
   await ensureTransferRequestsTable();
   const res = await pool.query(
-    `SELECT * FROM transfer_requests WHERE product_id = $1 ORDER BY created_at ASC`,
+    `SELECT tr.*, tu.role AS to_role
+     FROM transfer_requests tr
+     LEFT JOIN users tu ON tu.id = tr.to_user_id
+     WHERE tr.product_id = $1
+     ORDER BY tr.created_at ASC`,
     [productId]
   );
 
@@ -379,14 +484,15 @@ async function getWorkflowEventsForProduct(productId) {
     });
 
     if (row.status === 'accepted' && row.responded_at) {
+      const milestone = milestoneForRecipientRole(row.to_role);
       events.push({
         id: `wf-acc-${row.id}`,
         source: 'workflow',
-        label: 'Transfer Accepted',
-        status: 'Transfer Accepted',
+        label: milestone.label,
+        status: milestone.status,
         timestamp: new Date(row.responded_at).toISOString(),
         actor: row.to_org_name,
-        notes: `Blockchain custody accepted from ${row.from_org_name}`,
+        notes: `Custody accepted from ${row.from_org_name}. ${milestone.notesSuffix}`,
       });
     } else if (row.status === 'rejected' && row.responded_at) {
       events.push({
@@ -446,6 +552,11 @@ async function getCombinedProductTimeline(productId) {
   timeline.push(...workflowEvents);
 
   timeline.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  const productContext = await getProductTimelineContext(productId);
+  enrichTimelineMilestones(timeline, productContext);
+  timeline.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
   return { timeline, chain: chainEntries };
 }
 

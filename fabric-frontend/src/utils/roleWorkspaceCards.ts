@@ -47,6 +47,7 @@ export function roleWorkspaceCards(role: UserRole): WorkspaceCard[] {
       { titleKey: 'dash.mfg.create.t', descriptionKey: 'dash.mfg.create.d', to: '/create', icon: '➕' },
       { titleKey: 'dash.mfg.products.t', descriptionKey: 'dash.mfg.products.d', to: '/my-products', icon: '📦' },
       { titleKey: 'dash.mfg.transfer.t', descriptionKey: 'dash.mfg.transfer.d', to: '/transfer', icon: '🚚' },
+      { titleKey: 'dash.mfg.expiring.t', descriptionKey: 'dash.mfg.expiring.d', to: '/expiring', icon: '⏰' },
       { titleKey: 'dash.mfg.trace.t', descriptionKey: 'dash.mfg.trace.d', to: '/verify', icon: '🔍' },
     ];
   }

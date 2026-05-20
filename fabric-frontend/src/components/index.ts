@@ -20,3 +20,8 @@ export {
   PersonalizedAlertsPanel,
   PersonalizedAlertsList,
 } from './PersonalizedAlertsPanel';
+export { ConsumerVerificationSummary } from './ConsumerVerificationSummary';
+export { ProductComplaintForm } from './ProductComplaintForm';
+export { ProductTrustPathSummary } from './ProductTrustPathSummary';
+export { ManufacturerJourneyBadges } from './ManufacturerJourneyBadges';
+export { ManufacturerJourneyBreakdown } from './ManufacturerJourneyBreakdown';

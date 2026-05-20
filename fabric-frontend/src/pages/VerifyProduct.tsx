@@ -21,6 +21,9 @@ import {
   ExpiryBadge,
   ProductTimeline,
   PersonalizedAlertsPanel,
+  ConsumerVerificationSummary,
+  ProductComplaintForm,
+  ProductTrustPathSummary,
 } from '../components';
 import { parseQrPayload } from '../utils/parseQrPayload';
 import { getExpiryReminder } from '../utils/expiryReminder';
@@ -32,6 +35,7 @@ import {
   OrganizationFlaggedBadge,
 } from '../components/VerificationBadge';
 import { OrganizationLink } from '../components/OrganizationLink';
+import { VerifyProductLookupPreview } from '../components/ProductLookupPreview';
 
 const VerifyProduct: React.FC = () => {
   const { user } = useAuth();
@@ -48,6 +52,7 @@ const VerifyProduct: React.FC = () => {
   const [pastedQrUrl, setPastedQrUrl] = useState('');
   const [inventoryMsg, setInventoryMsg] = useState<string | null>(null);
   const [zoomImage, setZoomImage] = useState<string | null>(null);
+  const [verificationLevel, setVerificationLevel] = useState<'full' | 'limited' | null>(null);
 
   useEffect(() => {
     const fromState = (location.state as { productId?: string } | null)?.productId;
@@ -70,10 +75,12 @@ const VerifyProduct: React.FC = () => {
     setHistory(null);
     setSearchResults(null);
     setProductId(trimmed);
+    setVerificationLevel(null);
 
     try {
       const p = await getProduct(trimmed);
       setProduct(p);
+      setVerificationLevel('limited');
       setQuery(trimmed);
       const h = await getProductHistory(trimmed);
       setHistory(h);
@@ -96,6 +103,7 @@ const VerifyProduct: React.FC = () => {
     setProduct(null);
     setHistory(null);
     setSearchResults(null);
+    setVerificationLevel(null);
 
     try {
       const exactIdMatch = /^[A-Za-z0-9_-]+$/.test(term);
@@ -103,6 +111,7 @@ const VerifyProduct: React.FC = () => {
         try {
           const p = await getProduct(term);
           setProduct(p);
+          setVerificationLevel('limited');
           setProductId(term);
           setHistory(await getProductHistory(term));
           return;
@@ -140,11 +149,13 @@ const VerifyProduct: React.FC = () => {
     setShowScanner(false);
     setProduct(null);
     setHistory(null);
+    setVerificationLevel(null);
 
     try {
       const r = await verifyQr(parsed.productId, parsed.batch, parsed.hash);
       if (r.status === 'authentic' && r.product) {
         setProduct(r.product);
+        setVerificationLevel('full');
         setProductId(parsed.productId);
         const h = await getProductHistory(parsed.productId);
         setHistory(h);
@@ -220,11 +231,30 @@ const VerifyProduct: React.FC = () => {
                   label="Product lookup"
                   value={query}
                   onChange={(e) => {
-                    setQuery(e.target.value);
-                    setProductId(e.target.value);
+                    const next = e.target.value;
+                    setQuery(next);
+                    setProductId(next);
+                    const trimmed = next.trim();
+                    if (
+                      product &&
+                      trimmed &&
+                      trimmed.toLowerCase() !== product.productId.toLowerCase()
+                    ) {
+                      setProduct(null);
+                      setHistory(null);
+                      setVerificationLevel(null);
+                      setSearchResults(null);
+                    }
                   }}
                   placeholder="Product ID, name, manufacturer, or batch"
                 />
+                {!product && (
+                  <VerifyProductLookupPreview
+                    query={query}
+                    disabled={loading}
+                    onSelectProduct={(id) => void loadProductById(id)}
+                  />
+                )}
               </div>
               <div className="flex flex-wrap gap-2 items-end">
                 <Button type="submit" isLoading={loading} className="whitespace-nowrap">
@@ -411,6 +441,13 @@ const VerifyProduct: React.FC = () => {
                 {product.manufacturerOrganizationFlagged && <OrganizationFlaggedBadge />}
               </div>
             )}
+            {verificationLevel && (
+              <ConsumerVerificationSummary
+                verificationLevel={verificationLevel}
+                product={product}
+                hasSupplyChainHistory={Boolean(history && history.length > 0)}
+              />
+            )}
             {/* Product Card */}
             <ProductCard
               product={{
@@ -454,6 +491,8 @@ const VerifyProduct: React.FC = () => {
             />
 
             <PersonalizedAlertsPanel product={product} user={user} />
+
+            <ProductComplaintForm productId={product.productId} productName={product.name} />
 
             {/* Detailed Information */}
             <div className="card p-8">
@@ -597,15 +636,21 @@ const VerifyProduct: React.FC = () => {
               </div>
             </div>
 
-            {/* Product History */}
-            {history && history.length > 0 && (
-              <div className="card p-8">
-                <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
-                  Supply Chain History
-                </h3>
+            {/* Supply chain trust path + history */}
+            <div className="card p-8 space-y-6">
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                Supply Chain History
+              </h3>
+              <ProductTrustPathSummary product={product} history={history ?? []} />
+              {history && history.length > 0 ? (
                 <ProductTimeline history={history} />
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-page-muted">
+                  No detailed timeline events are recorded yet. The summary above is based on
+                  current product custody data.
+                </p>
+              )}
+            </div>
           </div>
         )}
 
